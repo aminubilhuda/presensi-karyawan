@@ -6,6 +6,7 @@ use App\Models\Holiday;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Workday;
+use App\Models\Setting;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -124,6 +125,39 @@ class DatabaseSeeder extends Seeder
         
         foreach ($holidays as $holiday) {
             Holiday::create($holiday);
+        }
+
+        // Seed pengaturan jam kerja
+        $settings = [
+            [
+                'key' => 'check_in_time',
+                'value' => '08:00',
+                'description' => 'Jam masuk kerja'
+            ],
+            [
+                'key' => 'check_out_time',
+                'value' => '16:00',
+                'description' => 'Jam pulang kerja'
+            ],
+            [
+                'key' => 'late_threshold',
+                'value' => '15',
+                'description' => 'Batas keterlambatan dalam menit'
+            ],
+            [
+                'key' => 'early_leave_threshold',
+                'value' => '15',
+                'description' => 'Batas pulang cepat dalam menit'
+            ],
+            [
+                'key' => 'default_radius',
+                'value' => '100',
+                'description' => 'Radius default untuk lokasi absensi dalam meter'
+            ]
+        ];
+
+        foreach ($settings as $setting) {
+            Setting::create($setting);
         }
     }
 }

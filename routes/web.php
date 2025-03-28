@@ -64,6 +64,6 @@ Route::middleware('auth')->group(function () {
         
         // Pengaturan aplikasi
         Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
-        Route::post('/settings', [SettingController::class, 'store'])->name('settings.store');
+        Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
     });
 });

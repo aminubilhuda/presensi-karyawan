@@ -63,23 +63,9 @@
                         <i class="fas fa-sign-in-alt"></i>
                     </div>
                     <div>
-                        <h6 class="card-title mb-0">Check-In</h6>
-                        <h2 class="my-2">{{ $stats['checked_in'] }}</h2>
-                        <p class="card-text mb-0">{{ round(($stats['checked_in'] / max(1, $stats['total_users'])) * 100) }}% dari total</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card stat-card bg-info text-white h-100">
-                <div class="card-body d-flex align-items-center">
-                    <div class="stat-icon bg-white text-info">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </div>
-                    <div>
-                        <h6 class="card-title mb-0">Check-Out</h6>
-                        <h2 class="my-2">{{ $stats['checked_out'] }}</h2>
-                        <p class="card-text mb-0">{{ round(($stats['checked_out'] / max(1, $stats['checked_in'])) * 100) }}% dari yang check-in</p>
+                        <h6 class="card-title mb-0">Tepat Waktu</h6>
+                        <h2 class="my-2">{{ $stats['on_time'] }}</h2>
+                        <p class="card-text mb-0">{{ round(($stats['on_time'] / max(1, $stats['total_users'])) * 100) }}% dari total</p>
                     </div>
                 </div>
             </div>
@@ -88,6 +74,20 @@
             <div class="card stat-card bg-warning text-dark h-100">
                 <div class="card-body d-flex align-items-center">
                     <div class="stat-icon bg-white text-warning">
+                        <i class="fas fa-user-times"></i>
+                    </div>
+                    <div>
+                        <h6 class="card-title mb-0">Terlambat</h6>
+                        <h2 class="my-2">{{ $stats['late'] }}</h2>
+                        <p class="card-text mb-0">{{ round(($stats['late'] / max(1, $stats['total_users'])) * 100) }}% dari total</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card bg-danger text-white h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="stat-icon bg-white text-danger">
                         <i class="fas fa-user-times"></i>
                     </div>
                     <div>
@@ -131,9 +131,13 @@
                                                 <p class="card-text text-muted small mb-0">{{ $attendance->user->role->name }}</p>
                                             </div>
                                             <div class="text-end">
-                                                <span class="badge bg-{{ $attendance->check_out_time ? 'success' : 'warning' }}">
-                                                    {{ $attendance->check_out_time ? 'Lengkap' : 'Belum Check-Out' }}
-                                                </span>
+                                                @if($attendance->status === 'terlambat')
+                                                    <span class="badge bg-warning">Terlambat</span>
+                                                @elseif($attendance->status === 'tepat_waktu')
+                                                    <span class="badge bg-success">Tepat Waktu</span>
+                                                @else
+                                                    <span class="badge bg-secondary">{{ ucfirst($attendance->status) }}</span>
+                                                @endif
                                             </div>
                                         </div>
                                         <hr class="my-2">
@@ -208,10 +212,12 @@
                                         @endif
                                     </td>
                                     <td>
-                                        @if($attendance->check_out_time)
-                                            <span class="badge bg-success">Lengkap</span>
+                                        @if($attendance->status === 'terlambat')
+                                            <span class="badge bg-warning">Terlambat</span>
+                                        @elseif($attendance->status === 'tepat_waktu')
+                                            <span class="badge bg-success">Tepat Waktu</span>
                                         @else
-                                            <span class="badge bg-warning text-dark">Belum Check-Out</span>
+                                            <span class="badge bg-secondary">{{ ucfirst($attendance->status) }}</span>
                                         @endif
                                     </td>
                                 </tr>

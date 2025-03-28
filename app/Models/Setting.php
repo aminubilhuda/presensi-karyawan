@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class Setting extends Model
 {
@@ -20,8 +21,10 @@ class Setting extends Model
      */
     public static function getValue(string $key, $default = null)
     {
-        $setting = self::where('key', $key)->first();
-        return $setting ? $setting->value : $default;
+        return Cache::remember('setting.' . $key, 3600, function () use ($key, $default) {
+            $setting = self::where('key', $key)->first();
+            return $setting ? $setting->value : $default;
+        });
     }
 
     /**
@@ -36,5 +39,7 @@ class Setting extends Model
                 'description' => $description,
             ]
         );
+
+        Cache::forget('setting.' . $key);
     }
 }

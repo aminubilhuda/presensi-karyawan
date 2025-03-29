@@ -90,8 +90,8 @@
                                 </a>
                             </div>
                             <div class="col-md-3">
-                                <a href="{{ route('admin.workdays.index') }}" class="btn btn-outline-primary d-block py-2">
-                                    <i class="fas fa-calendar-week me-2"></i> Hari Kerja
+                                <a href="{{ route('notifications.broadcast') }}" class="btn btn-outline-primary d-block py-2">
+                                    <i class="fas fa-paper-plane me-2"></i> Broadcast WhatsApp
                                 </a>
                             </div>
                             <div class="col-md-3">

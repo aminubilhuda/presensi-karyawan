@@ -3,7 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Sistem Absensi Sekolah')</title>
+    <title>@yield('title', App\Models\Setting::getValue('app_name', 'Sistem Absensi Sekolah')) - {{ App\Models\Setting::getValue('app_name', 'Sistem Absensi Sekolah') }}</title>
+    <meta name="description" content="{{ App\Models\Setting::getValue('app_description', 'Aplikasi manajemen absensi karyawan') }}">
+    
+    @php
+        $favicon = App\Models\Setting::getValue('app_favicon', null);
+    @endphp
+    
+    @if($favicon)
+        <link rel="icon" href="{{ asset('storage/' . $favicon) }}" type="image/x-icon">
+        <link rel="shortcut icon" href="{{ asset('storage/' . $favicon) }}" type="image/x-icon">
+    @endif
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -20,13 +30,45 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            padding-top: 56px;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: 0;
+            z-index: 1030;
         }
         
         #sidebar {
-            min-width: 250px;
-            max-width: 250px;
-            min-height: calc(100vh - 56px);
-            transition: all 0.3s;
+                min-width: 250px;
+                max-width: 250px;
+                min-height: calc(100vh - 56px);
+                transition: all 0.3s;
+                position: sticky;
+                top: 56px; /* Posisi sticky dimulai setelah navbar */
+                height: calc(100vh - 56px);
+                overflow-y: auto;
+                 max-height: calc(100vh - 56px);
+        }
+
+        /* Styling untuk scrollbar sidebar (opsional) */
+        #sidebar::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        #sidebar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        #sidebar::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 5px;
+        }
+
+        #sidebar::-webkit-scrollbar-thumb:hover {
+            background: #555;
         }
         
         .content {
@@ -73,6 +115,11 @@
             height: 400px;
             width: 100%;
         }
+        
+        .app-logo {
+            max-height: 30px;
+            margin-right: 8px;
+        }
     </style>
     
     @yield('styles')
@@ -84,11 +131,31 @@
             <button type="button" id="sidebarCollapse" class="btn btn-primary">
                 <i class="fas fa-bars"></i>
             </button>
-            <a class="navbar-brand ms-3" href="{{ route('home') }}">Sistem Absensi Sekolah</a>
+            
+            @php
+                $logo = App\Models\Setting::getValue('app_logo', null);
+                $appName = App\Models\Setting::getValue('app_name', 'Sistem Absensi Sekolah');
+            @endphp
+            
+            <a class="navbar-brand ms-3" href="{{ route('home') }}">
+                @if($logo)
+                    <img src="{{ asset('storage/' . $logo) }}" alt="{{ $appName }}" class="app-logo">
+                @endif
+                {{ $appName }}
+            </a>
+            
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <div class="text-light d-flex align-items-center">
+                            <i class="far fa-clock me-2"></i>
+                            <span id="current-time" class="fw-semibold"></span>
+                        </div>
+                    </li>
+                </ul>
                 <ul class="navbar-nav ms-auto">
                     @auth
                         <li class="nav-item dropdown">
@@ -120,7 +187,7 @@
         </div>
     </nav>
 
-    <div class="container-fluid">
+    <div class="container-fluid p-0">
         <div class="row">
             <!-- Sidebar -->
             @auth
@@ -135,6 +202,11 @@
                             
                             @if(auth()->user()->isAdmin())
                                 <li class="nav-item">
+                                    <a href="{{ route('dashboard.analytics') }}" class="sidebar-link {{ request()->routeIs('dashboard.analytics') ? 'active' : '' }}">
+                                        <i class="fas fa-chart-line"></i> Dashboard Analitik
+                                    </a>
+                                </li>
+                                <li class="nav-item">
                                     <a href="{{ route('admin.users.index') }}" class="sidebar-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
                                         <i class="fas fa-users"></i> Kelola Pengguna
                                     </a>
@@ -147,6 +219,38 @@
                                 <li class="nav-item">
                                     <a href="{{ route('admin.attendance.monitor') }}" class="sidebar-link {{ request()->routeIs('admin.attendance.monitor') ? 'active' : '' }}">
                                         <i class="fas fa-desktop"></i> Monitoring Absensi
+                                    </a>
+                                </li>
+                                <li class="nav-item dropdown">
+                                    <a href="#" class="sidebar-link" data-bs-toggle="dropdown">
+                                        <i class="fas fa-bell"></i> Notifikasi WhatsApp
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a href="{{ route('notifications.broadcast') }}" class="dropdown-item">
+                                                <i class="fas fa-paper-plane me-2"></i> Broadcast Pesan
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="{{ route('notifications.settings') }}" class="dropdown-item">
+                                                <i class="fas fa-cog me-2"></i> Pengaturan
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('calendar.index') }}" class="sidebar-link {{ request()->routeIs('calendar.index') ? 'active' : '' }}">
+                                        <i class="fas fa-calendar-alt"></i> Kalender
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('documents.index') }}" class="sidebar-link {{ request()->routeIs('documents.*') ? 'active' : '' }}">
+                                        <i class="fas fa-file-alt"></i> Manajemen Dokumen
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('support.index') }}" class="sidebar-link {{ request()->routeIs('support.*') ? 'active' : '' }}">
+                                        <i class="fas fa-ticket-alt"></i> Tiket Dukungan
                                     </a>
                                 </li>
                                 <li class="nav-item">
@@ -185,6 +289,21 @@
                                         <i class="fas fa-history"></i> Riwayat Absensi
                                     </a>
                                 </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('calendar.index') }}" class="sidebar-link {{ request()->routeIs('calendar.index') ? 'active' : '' }}">
+                                        <i class="fas fa-calendar-alt"></i> Kalender
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('documents.index') }}" class="sidebar-link {{ request()->routeIs('documents.*') ? 'active' : '' }}">
+                                        <i class="fas fa-file-alt"></i> Dokumen Saya
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('support.index') }}" class="sidebar-link {{ request()->routeIs('support.*') ? 'active' : '' }}">
+                                        <i class="fas fa-headset"></i> Layanan Dukungan
+                                    </a>
+                                </li>
                             @endif
                         </ul>
                     </div>
@@ -206,20 +325,19 @@
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 @endif
-
-                @yield('content')
+                    @yield('content')
             </main>
         </div>
     </div>
 
     <!-- Footer -->
-    <footer class="bg-dark text-white text-center py-3">
+    <footer class="bg-dark text-white text-center py-3 mt-auto">
         <div class="container">
             <p class="mb-0">&copy; {{ date('Y') }} Sistem Absensi Sekolah. Hak Cipta Dilindungi.</p>
         </div>
     </footer>
 
-    <!-- Bootstrap JS -->
+    <!-- Bootstrap JS dengan Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Leaflet JS -->
@@ -233,8 +351,41 @@
         document.getElementById('sidebarCollapse').addEventListener('click', function() {
             document.getElementById('sidebar').classList.toggle('active');
         });
+        
+        // Live clock
+        function updateClock() {
+            const now = new Date();
+            
+            // Format tanggal
+            const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            
+            const day = days[now.getDay()];
+            const date = now.getDate();
+            const month = months[now.getMonth()];
+            const year = now.getFullYear();
+            
+            // Format waktu
+            let hours = now.getHours();
+            let minutes = now.getMinutes();
+            let seconds = now.getSeconds();
+            
+            // Tambahkan leading zero jika perlu
+            hours = hours < 10 ? '0' + hours : hours;
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            seconds = seconds < 10 ? '0' + seconds : seconds;
+            
+            // Gabungkan format
+            const timeString = `${day}, ${date} ${month} ${year} - ${hours}:${minutes}:${seconds} WIB`;
+            
+            document.getElementById('current-time').textContent = timeString;
+            setTimeout(updateClock, 1000);
+        }
+        
+        updateClock();
     </script>
     
     @yield('scripts')
+    @stack('scripts')
 </body>
 </html> 

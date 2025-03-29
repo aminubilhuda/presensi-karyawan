@@ -36,10 +36,30 @@ class Attendance extends Model
     ];
 
     /**
-     * Mendapatkan user yang memiliki absensi ini
+     * Get the user that owns the attendance record
      */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get working duration in minutes
+     */
+    public function getWorkingDurationAttribute()
+    {
+        if (!$this->check_in_time || !$this->check_out_time) {
+            return 0;
+        }
+        
+        $checkIn = \Carbon\Carbon::parse($this->date . ' ' . $this->check_in_time);
+        $checkOut = \Carbon\Carbon::parse($this->date . ' ' . $this->check_out_time);
+        
+        // Handle if checkout is the next day
+        if ($checkOut->lt($checkIn)) {
+            $checkOut->addDay();
+        }
+        
+        return $checkIn->diffInMinutes($checkOut);
     }
 }

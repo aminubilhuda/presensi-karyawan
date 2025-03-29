@@ -5,19 +5,98 @@
 @section('content')
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-md-10">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0"><i class="fas fa-cogs me-2"></i> Pengaturan Sistem</h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('admin.settings.update') }}" method="POST">
+                    <form action="{{ route('admin.settings.update') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
                         
+                        <!-- Pengaturan Aplikasi -->
+                        <div class="mb-4">
+                            <h6 class="border-bottom pb-2 mb-3">Pengaturan Aplikasi</h6>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="app_name" class="form-label">Nama Aplikasi</label>
+                                    <input type="text" class="form-control @error('app_name') is-invalid @enderror" 
+                                           id="app_name" name="app_name" 
+                                           value="{{ old('app_name', $settings['app_name'] ?? 'Sistem Absensi Sekolah') }}" required>
+                                    @error('app_name')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted">Nama aplikasi yang akan ditampilkan di browser dan halaman</small>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="app_description" class="form-label">Deskripsi Aplikasi</label>
+                                    <input type="text" class="form-control @error('app_description') is-invalid @enderror" 
+                                           id="app_description" name="app_description" 
+                                           value="{{ old('app_description', $settings['app_description'] ?? 'Aplikasi manajemen absensi karyawan') }}">
+                                    @error('app_description')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted">Deskripsi singkat aplikasi</small>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="app_logo" class="form-label">Logo Aplikasi</label>
+                                    
+                                    @if($settings['app_logo'])
+                                        <div class="mb-2">
+                                            <img src="{{ asset('storage/' . $settings['app_logo']) }}" 
+                                                 alt="Logo Aplikasi" class="img-thumbnail" style="max-height: 100px;">
+                                            <div class="form-check mt-1">
+                                                <input class="form-check-input" type="checkbox" id="remove_logo" name="remove_logo" value="1">
+                                                <label class="form-check-label" for="remove_logo">
+                                                    Hapus logo
+                                                </label>
+                                            </div>
+                                        </div>
+                                    @endif
+                                    
+                                    <input type="file" class="form-control @error('app_logo') is-invalid @enderror" 
+                                           id="app_logo" name="app_logo" accept="image/*">
+                                    @error('app_logo')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted">Format: JPG, PNG, JPEG, SVG (maks. 2MB)</small>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="app_favicon" class="form-label">Favicon Aplikasi</label>
+                                    
+                                    @if($settings['app_favicon'])
+                                        <div class="mb-2">
+                                            <img src="{{ asset('storage/' . $settings['app_favicon']) }}" 
+                                                 alt="Favicon Aplikasi" class="img-thumbnail" style="max-height: 50px;">
+                                            <div class="form-check mt-1">
+                                                <input class="form-check-input" type="checkbox" id="remove_favicon" name="remove_favicon" value="1">
+                                                <label class="form-check-label" for="remove_favicon">
+                                                    Hapus favicon
+                                                </label>
+                                            </div>
+                                        </div>
+                                    @endif
+                                    
+                                    <input type="file" class="form-control @error('app_favicon') is-invalid @enderror" 
+                                           id="app_favicon" name="app_favicon" accept="image/x-icon,image/png">
+                                    @error('app_favicon')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted">Format: ICO, PNG (maks. 1MB)</small>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- Jam Kerja -->
                         <div class="mb-4">
-                            <h6 class="mb-3">Pengaturan Jam Kerja</h6>
+                            <h6 class="border-bottom pb-2 mb-3">Pengaturan Jam Kerja</h6>
                             
                             <div class="row mb-3">
                                 <div class="col-md-6">
@@ -70,7 +149,7 @@
                         
                         <!-- Pengaturan Lokasi -->
                         <div class="mb-4">
-                            <h6 class="mb-3">Pengaturan Lokasi Absensi</h6>
+                            <h6 class="border-bottom pb-2 mb-3">Pengaturan Lokasi Absensi</h6>
                             
                             <div class="mb-3">
                                 <label for="default_radius" class="form-label">Radius Default (Meter)</label>

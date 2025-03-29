@@ -33,12 +33,25 @@ class ProfileController extends Controller
                 'email',
                 Rule::unique('users')->ignore($user->id),
             ],
+            'phone' => 'nullable|string|regex:/^[1-9][0-9]{8,15}$/|max:20',
+            'wa_notifications' => 'nullable|boolean',
             'photo' => 'nullable|image|max:2048',
+        ], [
+            'phone.regex' => 'Format nomor telepon tidak valid. Gunakan format 81234567890 (tanpa 0 di depan).'
+        ]);
+        
+        // Log input data untuk debug
+        \Log::info('Profile update request', [
+            'user_id' => $user->id,
+            'phone_input' => $request->phone,
+            'has_wa_notifications' => $request->has('wa_notifications')
         ]);
         
         // Update basic info
         $user->name = $request->name;
         $user->email = $request->email;
+        $user->phone = $request->phone;
+        $user->wa_notifications = $request->has('wa_notifications');
         
         // Handle photo upload
         if ($request->hasFile('photo')) {
@@ -51,9 +64,26 @@ class ProfileController extends Controller
             $user->photo = $photoPath;
         }
         
-        $user->save();
-        
-        return redirect()->route('profile.edit')->with('success', 'Profil berhasil diperbarui.');
+        try {
+            $saved = $user->save();
+            
+            // Log hasil penyimpanan
+            \Log::info('Profile update result', [
+                'user_id' => $user->id,
+                'saved' => $saved,
+                'phone_after_save' => $user->phone,
+                'wa_notifications_after_save' => $user->wa_notifications
+            ]);
+            
+            return redirect()->route('profile.edit')->with('success', 'Profil berhasil diperbarui.');
+        } catch (\Exception $e) {
+            \Log::error('Error updating profile', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->route('profile.edit')->with('error', 'Gagal memperbarui profil: ' . $e->getMessage());
+        }
     }
     
     /**

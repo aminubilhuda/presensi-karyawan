@@ -13,6 +13,11 @@ use App\Http\Controllers\Admin\WorkdayController;
 use App\Http\Controllers\Admin\HolidayController;
 use App\Http\Controllers\Admin\LocationController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\TwoFactorController;
+use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\SupportController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 // Rute publik
@@ -26,11 +31,29 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 // Rute dashboard dan profil (butuh autentikasi)
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/analytics', [DashboardController::class, 'analytics'])->name('dashboard.analytics')->middleware('can:viewAnalytics,App\Models\User');
+    
+    // Calendar
+    Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
     
     // Profil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+    
+    // Two Factor Authentication
+    Route::get('/two-factor', [TwoFactorController::class, 'showTwoFactorForm'])->name('two-factor.show');
+    Route::post('/two-factor', [TwoFactorController::class, 'enableTwoFactor'])->name('two-factor.enable');
+    Route::delete('/two-factor', [TwoFactorController::class, 'disableTwoFactor'])->name('two-factor.disable');
+    Route::post('/two-factor/verify', [TwoFactorController::class, 'verify'])->name('two-factor.verify');
+    
+    // Documents
+    Route::resource('documents', DocumentController::class);
+    Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
+    
+    // Support Tickets
+    Route::resource('support', SupportController::class);
+    Route::post('/support/{support}/close', [SupportController::class, 'close'])->name('support.close');
     
     // Rute absensi (untuk guru dan staff)
     Route::middleware('role:Guru,Staf TU')->group(function () {
@@ -65,5 +88,13 @@ Route::middleware('auth')->group(function () {
         // Pengaturan aplikasi
         Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
         Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+    });
+
+    // Rute untuk notifikasi (hanya admin)
+    Route::middleware(['auth', 'role:Admin'])->prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/broadcast', [NotificationController::class, 'broadcastForm'])->name('broadcast');
+        Route::post('/broadcast', [NotificationController::class, 'sendBroadcast'])->name('send-broadcast');
+        Route::get('/settings', [NotificationController::class, 'settings'])->name('settings');
+        Route::post('/settings', [NotificationController::class, 'saveSettings'])->name('save-settings');
     });
 });

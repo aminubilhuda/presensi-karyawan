@@ -28,6 +28,18 @@ class DatabaseSeeder extends Seeder
             'email' => 'admin@example.com',
             'role_id' => $adminRole->id,
         ]);
+        // Membuat user guru
+        User::factory()->create([
+            'name' => 'Huda',
+            'email' => 'huda@example.com',
+            'role_id' => '2',
+        ]);
+        // Membuat user staf tu
+        User::factory()->create([
+            'name' => 'danang',
+            'email' => 'danang@example.com',
+            'role_id' => '3',
+        ]);
 
         // Membuat hari kerja default (Senin-Jumat)
         $workdays = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];

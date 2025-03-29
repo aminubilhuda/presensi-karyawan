@@ -5,11 +5,14 @@ namespace App\Services;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class FonnteService
 {
     protected $apiKey;
     protected $baseUrl = 'https://api.fonnte.com';
+    protected $countryCode = '62'; // Default Indonesia
+    protected $cacheTimeout = 3600; // 1 jam
 
     public function __construct()
     {
@@ -75,16 +78,21 @@ class FonnteService
             return [];
         }
         
-        // Ambil semua user yang punya nomor telepon dan ingin menerima notifikasi
-        $query = User::whereNotNull('phone')
-            ->where('wa_notifications', true);
-            
-        // Tambahkan filter jika ada
-        if (isset($filters['role_id'])) {
-            $query->where('role_id', $filters['role_id']);
-        }
+        // Gunakan cache untuk menghindari query berulang dalam waktu singkat
+        $cacheKey = 'broadcast_recipients_' . md5(json_encode($filters));
         
-        $users = $query->get();
+        $users = Cache::remember($cacheKey, $this->cacheTimeout, function() use ($filters) {
+            // Ambil semua user yang punya nomor telepon dan ingin menerima notifikasi
+            $query = User::whereNotNull('phone')
+                ->where('wa_notifications', true);
+                
+            // Tambahkan filter jika ada
+            if (isset($filters['role_id'])) {
+                $query->where('role_id', $filters['role_id']);
+            }
+            
+            return $query->get();
+        });
         
         // Jika tidak ada user yang memenuhi kriteria
         if ($users->isEmpty()) {
@@ -92,8 +100,10 @@ class FonnteService
             return [];
         }
         
-        // Ambil semua nomor telepon
-        $phones = $users->pluck('phone')->toArray();
+        // Ambil semua nomor telepon dan format dengan benar
+        $phones = $users->map(function($user) {
+            return $this->formatPhoneNumber($user->phone);
+        })->toArray();
         
         // Format pesan dengan awalan untuk broadcast
         $formattedMessage = "📢 *PENGUMUMAN*\n\n" . $message . "\n\n" .
@@ -110,7 +120,7 @@ class FonnteService
                 ])->post($this->baseUrl . '/send', [
                     'target' => implode(',', $chunk),
                     'message' => $formattedMessage,
-                    'countryCode' => '62', // Kode negara Indonesia
+                    'countryCode' => $this->countryCode,
                 ]);
                 
                 $result = $response->json();
@@ -155,12 +165,15 @@ class FonnteService
         }
 
         try {
+            // Format nomor telepon
+            $formattedPhone = $this->formatPhoneNumber($phone);
+            
             $response = Http::withHeaders([
                 'Authorization' => $this->apiKey
             ])->post($this->baseUrl . '/send', [
-                'target' => $phone,
+                'target' => $formattedPhone,
                 'message' => $message,
-                'countryCode' => '62', // Kode negara Indonesia
+                'countryCode' => $this->countryCode,
             ]);
 
             $result = $response->json();
@@ -168,12 +181,12 @@ class FonnteService
             // Log hasil request
             if ($response->successful()) {
                 Log::info('WhatsApp notification sent successfully', [
-                    'phone' => $phone,
+                    'phone' => $formattedPhone,
                     'status' => $result['status'] ?? 'unknown'
                 ]);
             } else {
                 Log::error('Failed to send WhatsApp notification', [
-                    'phone' => $phone,
+                    'phone' => $formattedPhone,
                     'error' => $result['reason'] ?? $response->body()
                 ]);
             }
@@ -187,5 +200,53 @@ class FonnteService
 
             return null;
         }
+    }
+    
+    /**
+     * Format nomor telepon untuk memastikan format yang benar
+     * 
+     * @param string $phone
+     * @return string
+     */
+    protected function formatPhoneNumber(string $phone)
+    {
+        // Hapus semua karakter non-digit
+        $phone = preg_replace('/\D/', '', $phone);
+        
+        // Hapus kode negara jika ada
+        if (substr($phone, 0, 2) == $this->countryCode) {
+            $phone = substr($phone, 2);
+        }
+        
+        // Hapus awalan 0 jika ada
+        if (substr($phone, 0, 1) == '0') {
+            $phone = substr($phone, 1);
+        }
+        
+        return $phone;
+    }
+    
+    /**
+     * Format nomor WhatsApp untuk URL/deep link
+     * 
+     * @param string $phone
+     * @return string
+     */
+    public static function formatWhatsAppNumber(string $phone)
+    {
+        // Hapus semua karakter non-digit
+        $phone = preg_replace('/\D/', '', $phone);
+        
+        // Hapus awalan 0 jika ada
+        if (substr($phone, 0, 1) == '0') {
+            $phone = '62' . substr($phone, 1);
+        }
+        
+        // Jika belum ada kode negara, tambahkan 62 (Indonesia)
+        if (substr($phone, 0, 2) != '62') {
+            $phone = '62' . $phone;
+        }
+        
+        return $phone;
     }
 } 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class Workday extends Model
 {
@@ -23,7 +24,9 @@ class Workday extends Model
      */
     public static function getActiveWorkdays()
     {
-        return self::where('is_active', true)->pluck('day')->toArray();
+        return Cache::remember('active_workdays', 60 * 24, function() {
+            return self::where('is_active', true)->pluck('day')->toArray();
+        });
     }
 
     /**
@@ -31,8 +34,20 @@ class Workday extends Model
      */
     public static function isWorkingDay($day)
     {
-        return self::where('day', $day)
-                ->where('is_active', true)
-                ->exists();
+        return in_array($day, self::getActiveWorkdays());
+    }
+    
+    /**
+     * Reset cache ketika ada perubahan data
+     */
+    public static function bootWorkday()
+    {
+        static::saved(function () {
+            Cache::forget('active_workdays');
+        });
+        
+        static::deleted(function () {
+            Cache::forget('active_workdays');
+        });
     }
 }

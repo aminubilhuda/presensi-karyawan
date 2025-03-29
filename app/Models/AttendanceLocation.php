@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class AttendanceLocation extends Model
 {
@@ -36,6 +37,7 @@ class AttendanceLocation extends Model
 
     /**
      * Menghitung jarak antara dua titik koordinat (dalam meter)
+     * Menggunakan formula Haversine untuk menghitung jarak dua titik di permukaan bumi
      */
     protected function calculateDistance($latitude, $longitude): float
     {
@@ -56,10 +58,41 @@ class AttendanceLocation extends Model
     }
 
     /**
-     * Mendapatkan lokasi absensi yang aktif
+     * Mendapatkan lokasi absensi yang aktif dengan cache
      */
     public static function getActiveLocations()
     {
-        return self::where('is_active', true)->get();
+        return Cache::remember('active_attendance_locations', 60 * 24, function() {
+            return self::where('is_active', true)->get();
+        });
+    }
+    
+    /**
+     * Menghapus cache saat ada perubahan di model
+     */
+    public static function bootAttendanceLocation()
+    {
+        static::saved(function () {
+            Cache::forget('active_attendance_locations');
+        });
+        
+        static::deleted(function () {
+            Cache::forget('active_attendance_locations');
+        });
+    }
+    
+    /**
+     * Memformat hasil jarak ke dalam bentuk string jarak (m, km)
+     *
+     * @param float $distance
+     * @return string
+     */
+    public static function formatDistance(float $distance): string
+    {
+        if ($distance < 1000) {
+            return round($distance) . ' m';
+        } else {
+            return round($distance / 1000, 2) . ' km';
+        }
     }
 }

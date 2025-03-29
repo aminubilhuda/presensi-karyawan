@@ -75,6 +75,7 @@ Route::middleware('auth')->group(function () {
         
         // Monitoring absensi
         Route::get('/attendance/monitor', [AttendanceMonitorController::class, 'index'])->name('attendance.monitor');
+        Route::get('/attendance/user/{user}', [AttendanceMonitorController::class, 'userAttendances'])->name('attendances.user');
         
         // Kelola hari kerja
         Route::resource('workdays', WorkdayController::class);

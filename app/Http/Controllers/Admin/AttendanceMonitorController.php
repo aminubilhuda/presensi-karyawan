@@ -89,4 +89,87 @@ class AttendanceMonitorController extends Controller
         
         return view('admin.attendance.monitor', compact('users', 'attendancesToday', 'mapData', 'stats', 'today'));
     }
+    
+    /**
+     * Menampilkan laporan absensi untuk satu pengguna tertentu
+     */
+    public function userAttendances(Request $request, User $user)
+    {
+        // Ambil filter bulan dan tahun, default bulan dan tahun ini
+        $month = $request->get('month', Carbon::now()->month);
+        $year = $request->get('year', Carbon::now()->year);
+        
+        // Ambil data pengguna dengan peran
+        $user->load('role');
+        
+        // Ambil absensi pengguna berdasarkan bulan dan tahun
+        $attendances = Attendance::where('user_id', $user->id)
+            ->whereMonth('date', $month)
+            ->whereYear('date', $year)
+            ->orderBy('date', 'desc')
+            ->paginate(15);
+            
+        // Statistik untuk bulan yang dipilih
+        $stats = [
+            'total' => $attendances->total(),
+            'present' => Attendance::where('user_id', $user->id)
+                ->whereMonth('date', $month)
+                ->whereYear('date', $year)
+                ->whereIn('status', ['hadir', 'terlambat'])
+                ->count(),
+            'absent' => Attendance::where('user_id', $user->id)
+                ->whereMonth('date', $month)
+                ->whereYear('date', $year)
+                ->whereIn('status', ['izin', 'sakit', 'alfa'])
+                ->count(),
+            'late' => Attendance::where('user_id', $user->id)
+                ->whereMonth('date', $month)
+                ->whereYear('date', $year)
+                ->where('status', 'terlambat')
+                ->count(),
+        ];
+        
+        // Data untuk chart/grafik
+        $chartData = DB::table('attendances')
+            ->selectRaw('DATE(date) as date, status, COUNT(*) as count')
+            ->where('user_id', $user->id)
+            ->whereMonth('date', $month)
+            ->whereYear('date', $year)
+            ->groupBy('date', 'status')
+            ->orderBy('date')
+            ->get();
+        
+        // Hitung rata-rata durasi kerja (dalam menit)
+        $avgDuration = DB::table('attendances')
+            ->where('user_id', $user->id)
+            ->whereMonth('date', $month)
+            ->whereYear('date', $year)
+            ->whereNotNull('check_in_time')
+            ->whereNotNull('check_out_time')
+            ->avg(DB::raw('
+                TIMESTAMPDIFF(
+                    MINUTE, 
+                    CONCAT(date, " ", check_in_time), 
+                    CONCAT(date, " ", check_out_time)
+                )
+            '));
+        
+        // Format rata-rata durasi ke format jam:menit
+        if ($avgDuration) {
+            $hours = floor($avgDuration / 60);
+            $minutes = $avgDuration % 60;
+            $stats['avg_duration'] = sprintf('%02d:%02d', $hours, $minutes);
+        } else {
+            $stats['avg_duration'] = '00:00';
+        }
+        
+        return view('admin.attendance.user_attendances', compact(
+            'user', 
+            'attendances', 
+            'month', 
+            'year', 
+            'stats',
+            'chartData'
+        ));
+    }
 }

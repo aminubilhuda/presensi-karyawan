@@ -127,7 +127,11 @@
                                     <div class="card-body p-3">
                                         <div class="d-flex justify-content-between">
                                             <div>
-                                                <h6 class="card-title mb-1">{{ $attendance->user->name }}</h6>
+                                                <h6 class="card-title mb-1">
+                                                    <a href="{{ route('admin.attendances.user', $attendance->user->id) }}" class="text-reset text-decoration-none">
+                                                        {{ $attendance->user->name }}
+                                                    </a>
+                                                </h6>
                                                 <p class="card-text text-muted small mb-0">{{ $attendance->user->role->name }}</p>
                                             </div>
                                             <div class="text-end">
@@ -191,7 +195,11 @@
                             @foreach($attendancesToday as $index => $attendance)
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
-                                    <td>{{ $attendance->user->name }}</td>
+                                    <td>
+                                        <a href="{{ route('admin.attendances.user', $attendance->user->id) }}">
+                                            {{ $attendance->user->name }}
+                                        </a>
+                                    </td>
                                     <td>{{ $attendance->user->role->name }}</td>
                                     <td>{{ date('H:i', strtotime($attendance->check_in_time)) }}</td>
                                     <td>
@@ -225,6 +233,69 @@
                         @else
                             <tr>
                                 <td colspan="8" class="text-center">Belum ada data absensi hari ini.</td>
+                            </tr>
+                        @endif
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pengguna yang belum absen -->
+    <div class="card mt-4">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0"><i class="fas fa-user-times me-2"></i> Pengguna Belum Absen Hari Ini</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nama</th>
+                            <th>Peran</th>
+                            <th>Email</th>
+                            <th>Telepon</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @php
+                            // Filter user yang belum melakukan absensi hari ini
+                            $absentUsers = $users->filter(function($user) use ($attendancesToday) {
+                                return !$attendancesToday->contains('user_id', $user->id);
+                            });
+                        @endphp
+                        
+                        @if($absentUsers->count() > 0)
+                            @foreach($absentUsers as $index => $user)
+                                <tr>
+                                    <td>{{ $index + 1 }}</td>
+                                    <td>
+                                        <a href="{{ route('admin.users.show', $user->id) }}">
+                                            {{ $user->name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ $user->role->name }}</td>
+                                    <td>{{ $user->email }}</td>
+                                    <td>{{ $user->phone ?? '-' }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ route('admin.attendances.user', $user->id) }}" class="btn btn-outline-primary" title="Lihat riwayat absensi">
+                                                <i class="fas fa-history"></i>
+                                            </a>
+                                            @if($user->phone)
+                                            <a href="https://wa.me/{{ \App\Services\FonnteService::formatWhatsAppNumber($user->phone) }}" target="_blank" class="btn btn-outline-success" title="Kirim WhatsApp">
+                                                <i class="fab fa-whatsapp"></i>
+                                            </a>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @else
+                            <tr>
+                                <td colspan="6" class="text-center">Semua pengguna sudah melakukan absensi hari ini.</td>
                             </tr>
                         @endif
                     </tbody>

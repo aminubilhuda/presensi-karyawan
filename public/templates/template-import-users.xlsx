@@ -1,0 +1,19 @@
+<!-- 
+INFORMASI PENTING:
+File ini hanya placeholder. Untuk membuat template XLSX, silakan:
+
+1. Buka aplikasi spreadsheet (seperti Microsoft Excel, Google Sheets, atau LibreOffice Calc)
+2. Buat baris header dengan kolom berikut:
+   - Nama*
+   - Email*
+   - Username
+   - Password*
+   - Peran*
+   - Nomor Telepon
+   - Notifikasi WA (Ya/Tidak)
+3. Simpan sebagai file XLSX
+4. Pastikan header tetap berada di baris pertama
+
+Atau Anda juga bisa menggunakan template CSV yang tersedia dan membukanya dengan
+aplikasi spreadsheet, lalu menyimpannya kembali sebagai format XLSX.
+--> 

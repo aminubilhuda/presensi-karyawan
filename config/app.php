@@ -177,6 +177,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class, // Tidak tersedia
         // App\Providers\EventServiceProvider::class, // Tidak tersedia
         App\Providers\RouteServiceProvider::class,
+        // Maatwebsite\Excel\ExcelServiceProvider::class, // Tidak diperlukan
 
     ],
 
@@ -193,6 +194,7 @@ return [
 
     'aliases' => Facade::defaultAliases()->merge([
         'QrCode' => SimpleSoftwareIO\QrCode\Facades\QrCode::class,
+        // 'Excel' => Maatwebsite\Excel\Facades\Excel::class, // Tidak diperlukan
     ])->toArray(),
 
 ];

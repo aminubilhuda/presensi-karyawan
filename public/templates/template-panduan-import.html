@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panduan Import Data Pengguna</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f5f5f5;
+        }
+        .required {
+            color: red;
+        }
+        .note {
+            background-color: #f8f9fa;
+            border-left: 4px solid #17a2b8;
+            padding: 10px 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Panduan Import Data Pengguna</h1>
+    
+    <p>Untuk mengimpor data pengguna, silakan gunakan template CSV yang tersedia. Berikut adalah panduan untuk mengisi template:</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Kolom</th>
+                <th>Keterangan</th>
+                <th>Contoh</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Nama<span class="required">*</span></td>
+                <td>Nama lengkap pengguna</td>
+                <td>John Doe</td>
+            </tr>
+            <tr>
+                <td>Email<span class="required">*</span></td>
+                <td>Alamat email (harus unik)</td>
+                <td>john.doe@example.com</td>
+            </tr>
+            <tr>
+                <td>Username</td>
+                <td>Username untuk login (opsional, harus unik jika diisi)</td>
+                <td>johndoe</td>
+            </tr>
+            <tr>
+                <td>Password<span class="required">*</span></td>
+                <td>Password untuk login</td>
+                <td>rahasia123</td>
+            </tr>
+            <tr>
+                <td>Peran<span class="required">*</span></td>
+                <td>Peran pengguna (harus sesuai dengan peran yang tersedia di sistem)</td>
+                <td>Karyawan</td>
+            </tr>
+            <tr>
+                <td>Nomor Telepon</td>
+                <td>Nomor telepon (opsional)</td>
+                <td>08123456789</td>
+            </tr>
+            <tr>
+                <td>Notifikasi WA (Ya/Tidak)</td>
+                <td>Apakah pengguna ingin menerima notifikasi via WhatsApp (opsional, default: Tidak)</td>
+                <td>Ya</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div class="note">
+        <p><strong>Catatan:</strong></p>
+        <ul>
+            <li>Kolom yang ditandai dengan <span class="required">*</span> adalah wajib diisi.</li>
+            <li>Format file yang didukung adalah CSV, XLS, dan XLSX.</li>
+            <li>Pastikan nilai di kolom "Peran" sesuai dengan peran yang tersedia di sistem.</li>
+            <li>Kolom "Notifikasi WA" hanya menerima nilai "Ya" atau "Tidak". Nilai lain akan dianggap "Tidak".</li>
+            <li>Ukuran file maksimal adalah 2MB.</li>
+        </ul>
+    </div>
+    
+    <div class="note">
+        <p><strong>Panduan XLSX/XLS:</strong></p>
+        <ol>
+            <li>Download template CSV yang disediakan.</li>
+            <li>Buka dengan Microsoft Excel, Google Sheets, atau aplikasi spreadsheet lainnya.</li>
+            <li>Isi data sesuai dengan format.</li>
+            <li>Simpan sebagai format XLSX atau XLS.</li>
+            <li>Upload file yang telah disimpan.</li>
+        </ol>
+    </div>
+    
+    <p><strong>Contoh isi file CSV:</strong></p>
+    <pre>
+Nama,Email,Username,Password,Peran,Nomor Telepon,Notifikasi WA (Ya/Tidak)
+John Doe,john.doe@example.com,johndoe,rahasia123,Karyawan,08123456789,Ya
+Jane Smith,jane.smith@example.com,janesmith,rahasia456,Manager,08198765432,Tidak
+    </pre>
+</body>
+</html> 

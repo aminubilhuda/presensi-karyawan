@@ -116,6 +116,23 @@ Route::middleware('auth')->group(function () {
         // Kelola pengguna
         Route::resource('users', UserController::class)->middleware('permission:admin.users.view,admin.users.create,admin.users.edit,admin.users.delete');
         
+        // Export dan import pengguna
+        Route::get('/users-export', [UserController::class, 'export'])
+            ->name('users.export')
+            ->middleware('permission:admin.users.view');
+        
+        Route::get('/users-import-template', [UserController::class, 'importTemplate'])
+            ->name('users.import.template')
+            ->middleware('permission:admin.users.create');
+        
+        Route::get('/users-import', [UserController::class, 'showImportForm'])
+            ->name('users.import')
+            ->middleware('permission:admin.users.create');
+        
+        Route::post('/users-import', [UserController::class, 'processImport'])
+            ->name('users.import.process')
+            ->middleware('permission:admin.users.create');
+        
         // Kelola peran
         Route::resource('roles', RoleController::class)
             ->except(['create', 'edit', 'show'])

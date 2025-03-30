@@ -10,6 +10,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use App\Exports\UsersExport;
+use App\Exports\UsersImportTemplate;
+use App\Imports\UsersImport;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
@@ -39,6 +45,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
+            'username' => 'nullable|string|max:255|unique:users|alpha_dash',
             'password' => 'required|string|min:8|confirmed',
             'role_id' => 'required|exists:roles,id',
             'phone' => 'nullable|string|max:20',
@@ -49,6 +56,7 @@ class UserController extends Controller
         $userData = [
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'username' => $validated['username'] ?? null,
             'password' => Hash::make($validated['password']),
             'role_id' => $validated['role_id'],
             'phone' => $validated['phone'] ?? null,
@@ -119,6 +127,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'username' => 'nullable|string|max:255|unique:users,username,' . $user->id . '|alpha_dash',
             'role_id' => 'required|exists:roles,id',
             'phone' => 'nullable|string|max:20',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
@@ -127,6 +136,7 @@ class UserController extends Controller
         $userData = [
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'username' => $validated['username'] ?? null,
             'role_id' => $validated['role_id'],
             'phone' => $validated['phone'] ?? null,
             'wa_notifications' => $request->has('wa_notifications') ? true : false,
@@ -183,5 +193,101 @@ class UserController extends Controller
         
         $user->delete();
         return redirect()->route('admin.users.index')->with('success', 'Pengguna berhasil dihapus.');
+    }
+
+    /**
+     * Export user data to Excel
+     */
+    public function export()
+    {
+        return UsersExport::download();
+    }
+    
+    /**
+     * Download import template
+     */
+    public function importTemplate()
+    {
+        $format = request()->query('format', 'csv');
+        
+        if ($format === 'xlsx') {
+            // Verifikasi dukungan ZipArchive
+            if (!class_exists('ZipArchive')) {
+                session()->flash('error', 'Ekstensi PHP ZIP tidak tersedia. Template XLSX tidak dapat dibuat. Silakan gunakan template CSV sebagai alternatif.');
+                return response()->download(public_path('templates/template-import-users.csv'));
+            }
+            
+            // Gunakan kelas template yang sudah ada
+            return UsersImportTemplate::download();
+        }
+        
+        return response()->download(public_path('templates/template-import-users.csv'));
+    }
+    
+    /**
+     * Show import form
+     */
+    public function showImportForm()
+    {
+        return view('admin.users.import');
+    }
+    
+    /**
+     * Process the import
+     */
+    public function processImport(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:csv,xlsx,xls|max:2048',
+        ], [
+            'file.required' => 'File wajib diupload',
+            'file.mimes' => 'Format file harus CSV, XLS, atau XLSX',
+            'file.max' => 'Ukuran file maksimal 2MB',
+        ]);
+        
+        try {
+            // Verifikasi dukungan ZipArchive untuk XLSX
+            $extension = $request->file('file')->getClientOriginalExtension();
+            if (in_array($extension, ['xlsx', 'xls']) && !class_exists('ZipArchive')) {
+                return back()->with('error', 'Ekstensi PHP ZIP tidak tersedia. Untuk mengimpor file Excel (XLSX/XLS), instal ekstensi PHP ZIP atau gunakan format CSV.');
+            }
+            
+            DB::beginTransaction();
+            
+            $result = UsersImport::import($request->file('file'));
+            
+            DB::commit();
+            
+            if ($result['success']) {
+                // Hitung jumlah data yang diimpor
+                $importedCount = $result['imported_count'] ?? 'beberapa';
+                
+                // Cek jika ada error tapi masih beberapa yang sukses
+                if (!empty($result['errors'])) {
+                    return redirect()->route('admin.users.index')
+                        ->with('success', 'Data pengguna berhasil diimpor. ' . $importedCount . ' data telah ditambahkan.')
+                        ->with('warning', 'Beberapa data tidak dapat diimpor: ' . count($result['errors']) . ' error ditemukan.');
+                }
+                
+                return redirect()->route('admin.users.index')
+                    ->with('success', 'Data pengguna berhasil diimpor. ' . $importedCount . ' data telah ditambahkan.');
+            } else {
+                // Cek jika ada beberapa data yang berhasil meskipun ada error
+                if (isset($result['imported_count']) && $result['imported_count'] > 0) {
+                    return back()
+                        ->withErrors(['import_errors' => $result['errors']])
+                        ->with('warning', 'Terjadi kesalahan saat mengimpor data, tetapi ' . $result['imported_count'] . ' data berhasil ditambahkan.')
+                        ->with('error', 'Terjadi kesalahan saat mengimpor data');
+                }
+                
+                return back()
+                    ->withErrors(['import_errors' => $result['errors']])
+                    ->with('error', 'Terjadi kesalahan saat mengimpor data');
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return back()->with('error', 'Terjadi kesalahan saat mengimpor data: ' . $e->getMessage());
+        }
     }
 }

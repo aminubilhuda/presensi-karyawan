@@ -95,6 +95,10 @@
                                     <td>{{ $user->email }}</td>
                                 </tr>
                                 <tr>
+                                    <th>Username</th>
+                                    <td>{{ $user->username ?: 'Belum diatur' }}</td>
+                                </tr>
+                                <tr>
                                     <th>Peran</th>
                                     <td>{{ $user->role->name }}</td>
                                 </tr>

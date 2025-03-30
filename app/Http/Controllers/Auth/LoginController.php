@@ -30,11 +30,17 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'login' => 'required|string',
             'password' => 'required|string',
         ]);
         
-        $credentials = $request->only('email', 'password');
+        $login_type = filter_var($request->input('login'), FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+        
+        $request->merge([
+            $login_type => $request->input('login')
+        ]);
+        
+        $credentials = $request->only($login_type, 'password');
         $remember = $request->boolean('remember');
         
         if (Auth::attempt($credentials, $remember)) {
@@ -44,8 +50,8 @@ class LoginController extends Controller
         }
         
         return back()->withErrors([
-            'email' => 'Email atau password yang dimasukkan tidak valid.',
-        ])->withInput($request->only('email', 'remember'));
+            'login' => 'Username/Email atau password yang dimasukkan tidak valid.',
+        ])->withInput($request->only('login', 'remember'));
     }
     
     /**

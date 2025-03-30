@@ -26,21 +26,34 @@ class DatabaseSeeder extends Seeder
         // Membuat user admin
         User::factory()->create([
             'name' => 'Admin',
-            'email' => 'admin@example.com',
+            'email' => 'abdira@smkabdinegara.sch.id',
+            'username' => 'abdira',
             'role_id' => $adminRole->id,
         ]);
         // Membuat user guru
         User::factory()->create([
-            'name' => 'Huda',
-            'email' => 'huda@example.com',
+            'name' => 'Aminu Bil Huda',
+            'email' => 'hudaaminubil@gmail.com',
+            'username' => 'aminu',
             'role_id' => '2',
         ]);
         // Membuat user staf tu
         User::factory()->create([
-            'name' => 'danang',
-            'email' => 'danang@example.com',
+            'name' => 'Danang Dwi Putra Teguh Wioso',
+            'email' => 'danangdwiputrateguhwioso@gmail.com',
+            'username' => 'danang',
             'role_id' => '3',
         ]);
+        // Membuat user staf tu
+        User::factory()->create([
+            'name' => 'Uswatun Hasanah',
+            'email' => 'uswatunhasanah@gmail.com',
+            'username' => 'uswatun',
+            'role_id' => '1',
+        ]);
+
+        // Memberikan permission ke roles yang telah dibuat
+        $this->call(RolePermissionsSeeder::class);
 
         // Membuat hari kerja default (Senin-Jumat)
         $workdays = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
@@ -144,12 +157,12 @@ class DatabaseSeeder extends Seeder
         $settings = [
             [
                 'key' => 'check_in_time',
-                'value' => '08:00',
+                'value' => '07:00',
                 'description' => 'Jam masuk kerja'
             ],
             [
                 'key' => 'check_out_time',
-                'value' => '16:00',
+                'value' => '15:00',
                 'description' => 'Jam pulang kerja'
             ],
             [
@@ -164,7 +177,7 @@ class DatabaseSeeder extends Seeder
             ],
             [
                 'key' => 'default_radius',
-                'value' => '100',
+                'value' => '60',
                 'description' => 'Radius default untuk lokasi absensi dalam meter'
             ]
         ];

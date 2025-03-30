@@ -1,3 +1,3 @@
-name;email;role;password
-AMINU BIL HUDA;huda@example.com;Guru;password
-DANANG SUPRIYANTO;danang@example.com;Staf TU;password
+name;email;username;password;role_id;phone;wa_notification
+AMINU BIL HUDA;huda@huda.com;aminu;12345678;Guru;85707357080;
+DANANG SUPRIYANTO;danang@danang.com;danang;12345678;Staf TU;85707357080;

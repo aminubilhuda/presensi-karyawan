@@ -1,0 +1,9 @@
+TEMPLATE IMPORT PENGGUNA
+Petunjuk: Isi data sesuai format, kolom bertanda * wajib diisi
+Peran yang tersedia: Admin, Karyawan, Manager
+
+Nama*,Email*,Username,Password*,Peran*,Nomor Telepon,Notifikasi WA (Ya/Tidak)
+John Doe,john.doe@example.com,johndoe,rahasia123,Karyawan,08123456789,Ya
+Jane Smith,jane.smith@example.com,janesmith,rahasia456,Manager,08198765432,Tidak
+
+DATA PENGGUNA (ISI DI BAWAH) 

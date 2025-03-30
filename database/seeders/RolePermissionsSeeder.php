@@ -28,6 +28,8 @@ class RolePermissionsSeeder extends Seeder
         if ($adminRole) {
             $adminRole->permissions()->sync($permissions->pluck('id')->toArray());
             $this->command->info('Admin diberikan semua permission.');
+        } else {
+            $this->command->error('Role Admin tidak ditemukan!');
         }
         
         // Guru mendapatkan permission yang relevan

@@ -36,6 +36,15 @@
                         </div>
 
                         <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control @error('username') is-invalid @enderror" id="username" name="username" value="{{ old('username', $user->username) }}">
+                            <small class="form-text text-muted">Username dapat digunakan untuk login sebagai alternatif dari email</small>
+                            @error('username')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-3">
                             <label for="phone" class="form-label">Nomor Telepon (WhatsApp)</label>
                             <input type="text" class="form-control @error('phone') is-invalid @enderror" id="phone" name="phone" value="{{ old('phone', $user->phone) }}" placeholder="Contoh: 08123456789">
                             <small class="form-text text-muted">Format: Gunakan awalan 0 atau 62. Contoh: 08123456789 atau 628123456789</small>

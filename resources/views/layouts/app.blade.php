@@ -129,7 +129,7 @@
                     </div>
                     <div class="info">
                         <a href="{{ route('profile.edit') }}" class="d-block">{{ auth()->user()->name }}</a>
-                        <small class="text-muted">{{ auth()->user()->isAdmin() ? 'Administrator' : 'Karyawan' }}</small>
+                        <small class="text-muted">{{ auth()->user()->role->name }}</small>
                     </div>
                 </div>
 

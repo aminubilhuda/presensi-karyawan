@@ -14,7 +14,8 @@ class NotificationController extends Controller
     
     public function __construct(FonnteService $fonnteService)
     {
-        $this->middleware(['auth', 'role:Admin']);
+        $this->middleware(['auth']);
+        $this->middleware('permission:admin.notifications.broadcast,admin.notifications.settings');
         $this->fonnteService = $fonnteService;
     }
     

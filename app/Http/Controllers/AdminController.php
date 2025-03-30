@@ -17,7 +17,9 @@ class AdminController extends Controller
      */
     public function __construct()
     {
-        $this->middleware(['auth', 'role:admin']);
+        $this->middleware(['auth']);
+        // Gunakan permission admin generik
+        $this->middleware('permission:admin.users.view');
     }
     
     /**

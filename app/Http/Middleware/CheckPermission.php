@@ -24,11 +24,6 @@ class CheckPermission
             return $next($request);
         }
 
-        // Jika user adalah admin, bypass semua permission check
-        if ($request->user()->isAdmin()) {
-            return $next($request);
-        }
-
         // Periksa apakah user memiliki salah satu dari permission yang diberikan
         if ($request->user()->hasAnyPermission($permissions)) {
             return $next($request);

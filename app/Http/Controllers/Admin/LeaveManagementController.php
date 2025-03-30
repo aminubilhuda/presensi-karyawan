@@ -22,7 +22,8 @@ class LeaveManagementController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('role:Admin,Kepala Sekolah');
+        $this->middleware(['auth']);
+        $this->middleware('permission:admin.leave.view');
     }
     
     /**

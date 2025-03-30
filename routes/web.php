@@ -18,6 +18,9 @@ use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\QrAttendanceController;
+use App\Http\Controllers\LeaveRequestController;
 use Illuminate\Support\Facades\Route;
 
 // Rute publik
@@ -57,17 +60,34 @@ Route::middleware('auth')->group(function () {
     
     // Rute absensi (untuk guru dan staff)
     Route::middleware('role:Guru,Staf TU')->group(function () {
-        Route::get('/attendance/check-in', [AttendanceController::class, 'checkInForm'])->name('attendance.check-in');
-        Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn']);
-        Route::get('/attendance/check-out', [AttendanceController::class, 'checkOutForm'])->name('attendance.check-out');
-        Route::post('/attendance/check-out', [AttendanceController::class, 'checkOut']);
+        Route::get('/attendance/check-in', [AttendanceController::class, 'checkInForm'])->name('attendance.check-in.form');
+        Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn'])->name('attendance.check-in');
+        Route::get('/attendance/check-out', [AttendanceController::class, 'checkOutForm'])->name('attendance.check-out.form');
+        Route::post('/attendance/check-out', [AttendanceController::class, 'checkOut'])->name('attendance.check-out');
         Route::get('/attendance/history', [AttendanceController::class, 'history'])->name('attendance.history');
+        
+        // QR Code Absensi
+        Route::get('/attendance/qr-generate', [QrAttendanceController::class, 'generateQrForm'])->name('attendance.qr-generate');
+        
+        // Menu Izin/Cuti
+        Route::get('/leave', [LeaveRequestController::class, 'index'])->name('leave.index');
+        Route::get('/leave/create', [LeaveRequestController::class, 'create'])->name('leave.create');
+        Route::post('/leave', [LeaveRequestController::class, 'store'])->name('leave.store');
+        Route::get('/leave/{leave}', [LeaveRequestController::class, 'show'])->name('leave.show');
+        Route::delete('/leave/{leave}/cancel', [LeaveRequestController::class, 'cancel'])->name('leave.cancel');
     });
+    
+    // Rute publik untuk scan QR Code absensi (tanpa auth)
+    Route::get('/qr/scan/{token}', [QrAttendanceController::class, 'scanQrCode'])->name('qr.scan');
+    Route::post('/qr/process', [QrAttendanceController::class, 'processQrAttendance'])->name('qr.process-attendance');
     
     // Rute admin
     Route::middleware('role:Admin')->prefix('admin')->name('admin.')->group(function () {
         // Kelola pengguna
         Route::resource('users', UserController::class);
+        
+        // Kelola peran
+        Route::resource('roles', RoleController::class)->except(['create', 'edit', 'show']);
         
         // Laporan absensi
         Route::get('/attendance/report', [AttendanceReportController::class, 'index'])->name('attendance.report');
@@ -89,6 +109,13 @@ Route::middleware('auth')->group(function () {
         // Pengaturan aplikasi
         Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
         Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+        
+        // Kelola permohonan izin/cuti
+        Route::get('/leave', [App\Http\Controllers\Admin\LeaveManagementController::class, 'index'])->name('leave.index');
+        Route::get('/leave/{leave}', [App\Http\Controllers\Admin\LeaveManagementController::class, 'show'])->name('leave.show');
+        Route::post('/leave/{leave}/approve', [App\Http\Controllers\Admin\LeaveManagementController::class, 'approve'])->name('leave.approve');
+        Route::post('/leave/{leave}/reject', [App\Http\Controllers\Admin\LeaveManagementController::class, 'reject'])->name('leave.reject');
+        Route::get('/leave/export', [App\Http\Controllers\Admin\LeaveManagementController::class, 'export'])->name('leave.export');
     });
 
     // Rute untuk notifikasi (hanya admin)

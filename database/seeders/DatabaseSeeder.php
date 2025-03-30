@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Workday;
 use App\Models\Setting;
+use Database\Seeders\WorkdaySeeder;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -171,5 +172,8 @@ class DatabaseSeeder extends Seeder
         foreach ($settings as $setting) {
             Setting::create($setting);
         }
+
+        // Seed hari kerja
+        $this->call(WorkdaySeeder::class);
     }
 }

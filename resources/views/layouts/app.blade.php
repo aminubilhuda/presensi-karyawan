@@ -27,6 +27,12 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     
+    <!-- Scripts -->
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    
+    <!-- Face-api.js Library -->
+    <script src="{{ asset('js/face-api/face-api.min.js') }}"></script>
+    
     <!-- Custom CSS -->
     <style>
         #current-time {
@@ -153,6 +159,12 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a href="{{ route('admin.roles.index') }}" class="nav-link {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-user-tag"></i>
+                                    <p>Manajemen Peran</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a href="{{ route('admin.attendance.report') }}" class="nav-link {{ request()->routeIs('admin.attendance.report') ? 'active' : '' }}">
                                     <i class="nav-icon fas fa-chart-bar"></i>
                                     <p>Laporan Absensi</p>
@@ -162,6 +174,12 @@
                                 <a href="{{ route('admin.attendance.monitor') }}" class="nav-link {{ request()->routeIs('admin.attendance.monitor') ? 'active' : '' }}">
                                     <i class="nav-icon fas fa-desktop"></i>
                                     <p>Monitoring Absensi</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.leave.index') }}" class="nav-link {{ request()->routeIs('admin.leave.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-calendar-minus"></i>
+                                    <p>Kelola Perizinan</p>
                                 </a>
                             </li>
                             
@@ -225,21 +243,33 @@
                         @else
                             <li class="nav-header">ABSENSI</li>
                             <li class="nav-item">
-                                <a href="{{ route('attendance.check-in') }}" class="nav-link {{ request()->routeIs('attendance.check-in') ? 'active' : '' }}">
+                                <a href="{{ route('attendance.check-in.form') }}" class="nav-link {{ request()->routeIs('attendance.check-in.form') ? 'active' : '' }}">
                                     <i class="nav-icon fas fa-sign-in-alt"></i>
                                     <p>Absen Masuk</p>
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{{ route('attendance.check-out') }}" class="nav-link {{ request()->routeIs('attendance.check-out') ? 'active' : '' }}">
+                                <a href="{{ route('attendance.check-out.form') }}" class="nav-link {{ request()->routeIs('attendance.check-out.form') ? 'active' : '' }}">
                                     <i class="nav-icon fas fa-sign-out-alt"></i>
                                     <p>Absen Pulang</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('attendance.qr-generate') }}" class="nav-link {{ request()->routeIs('attendance.qr-generate') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-qrcode"></i>
+                                    <p>QR Code Absensi</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="{{ route('attendance.history') }}" class="nav-link {{ request()->routeIs('attendance.history') ? 'active' : '' }}">
                                     <i class="nav-icon fas fa-history"></i>
                                     <p>Riwayat Absensi</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('leave.index') }}" class="nav-link {{ request()->routeIs('leave.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-calendar-minus"></i>
+                                    <p>Pengajuan Izin</p>
                                 </a>
                             </li>
                             

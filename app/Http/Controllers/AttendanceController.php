@@ -51,13 +51,21 @@ class AttendanceController extends Controller
         // Cek apakah hari ini adalah hari kerja
         $todayName = Carbon::now($this->timezone)->locale('id')->isoFormat('dddd'); // Mendapatkan nama hari dalam bahasa Indonesia
         
-        if (!Workday::isWorkingDay($todayName)) {
+        \Log::info('Check working day', [
+            'today_name' => $todayName,
+            'is_working_day' => Workday::isWorkingDay($todayName)
+        ]);
+        
+        // Sementara nonaktifkan pengecekan hari kerja (PENTING: Ini adalah solusi sementara)
+        $ignoreWorkdayCheck = true;
+        
+        if (!$ignoreWorkdayCheck && !Workday::isWorkingDay($todayName)) {
             return redirect()->route('dashboard')->with('error', 'Hari ini bukan hari kerja.');
         }
         
         // Cek apakah hari ini adalah hari libur
         $isHoliday = Holiday::whereDate('date', $today)->exists();
-        if ($isHoliday) {
+        if (!$ignoreWorkdayCheck && $isHoliday) {
             return redirect()->route('dashboard')->with('error', 'Hari ini adalah hari libur.');
         }
         
@@ -231,6 +239,9 @@ class AttendanceController extends Controller
         if ($todayAttendance->check_out_time) {
             return redirect()->route('dashboard')->with('error', 'Anda sudah melakukan absen pulang hari ini.');
         }
+        
+        // Sementara nonaktifkan pengecekan hari kerja (PENTING: Ini adalah solusi sementara)
+        $ignoreWorkdayCheck = true;
         
         // Mendapatkan lokasi absensi yang aktif
         $locations = AttendanceLocation::getActiveLocations();

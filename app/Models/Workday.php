@@ -25,7 +25,9 @@ class Workday extends Model
     public static function getActiveWorkdays()
     {
         return Cache::remember('active_workdays', 60 * 24, function() {
-            return self::where('is_active', true)->pluck('day')->toArray();
+            $activeWorkdays = self::where('is_active', true)->pluck('day')->toArray();
+            \Log::info('Active workdays', ['days' => $activeWorkdays]);
+            return $activeWorkdays;
         });
     }
 
@@ -34,7 +36,14 @@ class Workday extends Model
      */
     public static function isWorkingDay($day)
     {
-        return in_array($day, self::getActiveWorkdays());
+        $activeWorkdays = self::getActiveWorkdays();
+        $result = in_array($day, $activeWorkdays);
+        \Log::info('Checking if day is a working day', [
+            'day' => $day,
+            'active_workdays' => $activeWorkdays,
+            'is_working_day' => $result
+        ]);
+        return $result;
     }
     
     /**
@@ -49,5 +58,14 @@ class Workday extends Model
         static::deleted(function () {
             Cache::forget('active_workdays');
         });
+    }
+
+    /**
+     * Clear the active workdays cache
+     */
+    public static function clearActiveWorkdaysCache()
+    {
+        Cache::forget('active_workdays');
+        return true;
     }
 }

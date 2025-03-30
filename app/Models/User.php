@@ -95,6 +95,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Cek apakah user adalah kepala sekolah
+     */
+    public function isPrincipal(): bool
+    {
+        return $this->role->name === 'Kepala Sekolah';
+    }
+
+    /**
      * Check if user has specific role
      */
     public function hasRole($role)
@@ -108,5 +116,29 @@ class User extends Authenticatable
             return $this->role->name === $role;
         }
         return false;
+    }
+
+    /**
+     * Check if user has specific permission
+     */
+    public function hasPermission($permission): bool
+    {
+        return $this->role->hasPermission($permission);
+    }
+
+    /**
+     * Check if user has all permissions specified
+     */
+    public function hasAllPermissions($permissions): bool
+    {
+        return $this->role->hasAllPermissions($permissions);
+    }
+
+    /**
+     * Check if user has any of the permissions specified
+     */
+    public function hasAnyPermission($permissions): bool
+    {
+        return $this->role->hasAnyPermission($permissions);
     }
 }

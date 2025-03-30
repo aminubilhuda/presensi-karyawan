@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\CheckRole;
+use App\Http\Middleware\CheckPermission;
 
 class RouteServiceProvider extends ServiceProvider
 {
@@ -17,6 +18,7 @@ class RouteServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app['router']->aliasMiddleware('role', CheckRole::class);
+        $this->app['router']->aliasMiddleware('permission', CheckPermission::class);
     }
 
     /**

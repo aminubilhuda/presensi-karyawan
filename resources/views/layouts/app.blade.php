@@ -15,343 +15,317 @@
         <link rel="shortcut icon" href="{{ asset('storage/' . $favicon) }}" type="image/x-icon">
     @endif
     
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Font: Source Sans Pro -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- AdminLTE CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     
     <!-- Custom CSS -->
     <style>
-        body {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            padding-top: 56px;
+        #current-time {
+            font-size: 0.9rem;
         }
-
-        .navbar {
-            position: fixed;
-            top: 0;
-            right: 0;
-            left: 0;
-            z-index: 1030;
-        }
-        
-        #sidebar {
-                min-width: 250px;
-                max-width: 250px;
-                min-height: calc(100vh - 56px);
-                transition: all 0.3s;
-                position: sticky;
-                top: 56px; /* Posisi sticky dimulai setelah navbar */
-                height: calc(100vh - 56px);
-                overflow-y: auto;
-                 max-height: calc(100vh - 56px);
-        }
-
-        /* Styling untuk scrollbar sidebar (opsional) */
-        #sidebar::-webkit-scrollbar {
-            width: 5px;
-        }
-
-        #sidebar::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-
-        #sidebar::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 5px;
-        }
-
-        #sidebar::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-        
-        .content {
-            flex: 1;
-            width: 100%;
-        }
-        
-        .sidebar-link {
-            display: flex;
-            align-items: center;
-            padding: 10px 15px;
-            transition: all 0.3s;
-            text-decoration: none;
-            color: #495057;
-        }
-        
-        .sidebar-link:hover {
-            background-color: #e9ecef;
-            color: #212529;
-        }
-        
-        .sidebar-link.active {
-            background-color: #0d6efd;
-            color: white;
-        }
-        
-        .sidebar-link i {
-            margin-right: 10px;
-            width: 20px;
-            text-align: center;
-        }
-        
-        @media (max-width: 768px) {
-            #sidebar {
-                margin-left: -250px;
-            }
-            
-            #sidebar.active {
-                margin-left: 0;
-            }
-        }
-        
         #map {
             height: 400px;
             width: 100%;
         }
-        
         .app-logo {
-            max-height: 30px;
-            margin-right: 8px;
+            max-height: 33px;
+            margin-right: 5px;
         }
     </style>
     
     @yield('styles')
 </head>
-<body>
-    <!-- Header -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <button type="button" id="sidebarCollapse" class="btn btn-primary">
-                <i class="fas fa-bars"></i>
-            </button>
-            
+<body class="hold-transition sidebar-mini layout-fixed">
+    <div class="wrapper">
+        <!-- Navbar -->
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+            <!-- Left navbar links -->
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+                </li>
+                <li class="nav-item d-none d-sm-inline-block">
+                    <a href="{{ route('home') }}" class="nav-link">Beranda</a>
+                </li>
+            </ul>
+
+            <!-- Right navbar links -->
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <div class="nav-link">
+                        <i class="far fa-clock mr-2"></i>
+                        <span id="current-time" class="font-weight-semibold"></span>
+                    </div>
+                </li>
+                @auth
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown">
+                        <img src="{{ auth()->user()->photo ? asset('storage/' . auth()->user()->photo) : asset('images/avatar.png') }}" 
+                             class="rounded-circle mr-1" width="30" height="30" alt="Avatar"> 
+                        {{ auth()->user()->name }}
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <a class="dropdown-item" href="{{ route('profile.edit') }}">
+                            <i class="fas fa-user mr-2"></i>Profil
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="dropdown-item">
+                                <i class="fas fa-sign-out-alt mr-2"></i>Keluar
+                            </button>
+                        </form>
+                    </div>
+                </li>
+                @else
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('login') }}">Masuk</a>
+                </li>
+                @endauth
+            </ul>
+        </nav>
+        <!-- /.navbar -->
+
+        <!-- Main Sidebar Container -->
+        @auth
+        <aside class="main-sidebar sidebar-light-primary elevation-2">
+            <!-- Brand Logo -->
             @php
                 $logo = App\Models\Setting::getValue('app_logo', null);
-                $appName = App\Models\Setting::getValue('app_name', 'Sistem Absensi Sekolah');
+                $appName = App\Models\Setting::getValue('app_name', 'Sistem Absensi');
             @endphp
             
-            <a class="navbar-brand ms-3" href="{{ route('home') }}">
+            <a href="{{ route('home') }}" class="brand-link">
                 @if($logo)
-                    <img src="{{ asset('storage/' . $logo) }}" alt="{{ $appName }}" class="app-logo">
+                    <img src="{{ asset('storage/' . $logo) }}" alt="{{ $appName }}" class="brand-image">
+                @else
+                    <i class="fas fa-fingerprint brand-image"></i>
                 @endif
-                {{ $appName }}
+                <span class="brand-text font-weight-light">{{ $appName }}</span>
             </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <div class="text-light d-flex align-items-center">
-                            <i class="far fa-clock me-2"></i>
-                            <span id="current-time" class="fw-semibold"></span>
-                        </div>
-                    </li>
-                </ul>
-                <ul class="navbar-nav ms-auto">
-                    @auth
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                                <img src="{{ auth()->user()->photo ? asset('storage/' . auth()->user()->photo) : asset('images/avatar.png') }}" 
-                                     class="rounded-circle me-1" width="30" height="30" alt="Avatar"> 
-                                {{ auth()->user()->name }}
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="fas fa-user me-2"></i>Profil</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <form method="POST" action="{{ route('logout') }}">
-                                        @csrf
-                                        <button type="submit" class="dropdown-item">
-                                            <i class="fas fa-sign-out-alt me-2"></i>Keluar
-                                        </button>
-                                    </form>
-                                </li>
-                            </ul>
-                        </li>
-                    @else
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ route('login') }}">Masuk</a>
-                        </li>
-                    @endauth
-                </ul>
-            </div>
-        </div>
-    </nav>
 
-    <div class="container-fluid p-0">
-        <div class="row">
             <!-- Sidebar -->
-            @auth
-                <div id="sidebar" class="bg-light">
-                    <div class="pt-3">
-                        <ul class="nav flex-column">
+            <div class="sidebar">
+                <!-- Sidebar user (optional) -->
+                <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+                    <div class="image">
+                        <img src="{{ auth()->user()->photo ? asset('storage/' . auth()->user()->photo) : asset('images/avatar.png') }}" 
+                             class="rounded-circle elevation-1" alt="User Image">
+                    </div>
+                    <div class="info">
+                        <a href="{{ route('profile.edit') }}" class="d-block">{{ auth()->user()->name }}</a>
+                        <small class="text-muted">{{ auth()->user()->isAdmin() ? 'Administrator' : 'Karyawan' }}</small>
+                    </div>
+                </div>
+
+                <!-- Sidebar Menu -->
+                <nav class="mt-2">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                        <li class="nav-item">
+                            <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-tachometer-alt"></i>
+                                <p>Dashboard</p>
+                            </a>
+                        </li>
+                        
+                        @if(auth()->user()->isAdmin())
                             <li class="nav-item">
-                                <a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                                <a href="{{ route('dashboard.analytics') }}" class="nav-link {{ request()->routeIs('dashboard.analytics') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-chart-line"></i>
+                                    <p>Dashboard Analitik</p>
                                 </a>
                             </li>
                             
-                            @if(auth()->user()->isAdmin())
-                                <li class="nav-item">
-                                    <a href="{{ route('dashboard.analytics') }}" class="sidebar-link {{ request()->routeIs('dashboard.analytics') ? 'active' : '' }}">
-                                        <i class="fas fa-chart-line"></i> Dashboard Analitik
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('admin.users.index') }}" class="sidebar-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
-                                        <i class="fas fa-users"></i> Kelola Pengguna
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('admin.attendance.report') }}" class="sidebar-link {{ request()->routeIs('admin.attendance.report') ? 'active' : '' }}">
-                                        <i class="fas fa-chart-bar"></i> Laporan Absensi
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('admin.attendance.monitor') }}" class="sidebar-link {{ request()->routeIs('admin.attendance.monitor') ? 'active' : '' }}">
-                                        <i class="fas fa-desktop"></i> Monitoring Absensi
-                                    </a>
-                                </li>
-                                <li class="nav-item dropdown">
-                                    <a href="#" class="sidebar-link" data-bs-toggle="dropdown">
-                                        <i class="fas fa-bell"></i> Notifikasi WhatsApp
-                                    </a>
-                                    <ul class="dropdown-menu">
-                                        <li>
-                                            <a href="{{ route('notifications.broadcast') }}" class="dropdown-item">
-                                                <i class="fas fa-paper-plane me-2"></i> Broadcast Pesan
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="{{ route('notifications.settings') }}" class="dropdown-item">
-                                                <i class="fas fa-cog me-2"></i> Pengaturan
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('calendar.index') }}" class="sidebar-link {{ request()->routeIs('calendar.index') ? 'active' : '' }}">
-                                        <i class="fas fa-calendar-alt"></i> Kalender
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('documents.index') }}" class="sidebar-link {{ request()->routeIs('documents.*') ? 'active' : '' }}">
-                                        <i class="fas fa-file-alt"></i> Manajemen Dokumen
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('support.index') }}" class="sidebar-link {{ request()->routeIs('support.*') ? 'active' : '' }}">
-                                        <i class="fas fa-ticket-alt"></i> Tiket Dukungan
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('admin.workdays.index') }}" class="sidebar-link {{ request()->routeIs('admin.workdays.*') ? 'active' : '' }}">
-                                        <i class="fas fa-calendar-week"></i> Hari Kerja
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('admin.holidays.index') }}" class="sidebar-link {{ request()->routeIs('admin.holidays.*') ? 'active' : '' }}">
-                                        <i class="fas fa-calendar-day"></i> Hari Libur
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('admin.locations.index') }}" class="sidebar-link {{ request()->routeIs('admin.locations.*') ? 'active' : '' }}">
-                                        <i class="fas fa-map-marker-alt"></i> Lokasi Absensi
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('admin.settings.index') }}" class="sidebar-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">
-                                        <i class="fas fa-cogs"></i> Pengaturan
-                                    </a>
-                                </li>
-                            @else
-                                <li class="nav-item">
-                                    <a href="{{ route('attendance.check-in') }}" class="sidebar-link {{ request()->routeIs('attendance.check-in') ? 'active' : '' }}">
-                                        <i class="fas fa-sign-in-alt"></i> Absen Masuk
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('attendance.check-out') }}" class="sidebar-link {{ request()->routeIs('attendance.check-out') ? 'active' : '' }}">
-                                        <i class="fas fa-sign-out-alt"></i> Absen Pulang
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('attendance.history') }}" class="sidebar-link {{ request()->routeIs('attendance.history') ? 'active' : '' }}">
-                                        <i class="fas fa-history"></i> Riwayat Absensi
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('calendar.index') }}" class="sidebar-link {{ request()->routeIs('calendar.index') ? 'active' : '' }}">
-                                        <i class="fas fa-calendar-alt"></i> Kalender
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('documents.index') }}" class="sidebar-link {{ request()->routeIs('documents.*') ? 'active' : '' }}">
-                                        <i class="fas fa-file-alt"></i> Dokumen Saya
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('support.index') }}" class="sidebar-link {{ request()->routeIs('support.*') ? 'active' : '' }}">
-                                        <i class="fas fa-headset"></i> Layanan Dukungan
-                                    </a>
-                                </li>
-                            @endif
-                        </ul>
-                    </div>
+                            <li class="nav-header">MANAJEMEN</li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-users"></i>
+                                    <p>Kelola Pengguna</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.attendance.report') }}" class="nav-link {{ request()->routeIs('admin.attendance.report') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-chart-bar"></i>
+                                    <p>Laporan Absensi</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.attendance.monitor') }}" class="nav-link {{ request()->routeIs('admin.attendance.monitor') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-desktop"></i>
+                                    <p>Monitoring Absensi</p>
+                                </a>
+                            </li>
+                            
+                            <li class="nav-header">NOTIFIKASI</li>
+                            <li class="nav-item">
+                                <a href="{{ route('notifications.broadcast') }}" class="nav-link {{ request()->routeIs('notifications.broadcast') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-paper-plane"></i>
+                                    <p>Broadcast Pesan</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('notifications.settings') }}" class="nav-link {{ request()->routeIs('notifications.settings') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-bell"></i>
+                                    <p>Pengaturan Notifikasi</p>
+                                </a>
+                            </li>
+                            
+                            <li class="nav-header">SISTEM</li>
+                            <li class="nav-item">
+                                <a href="{{ route('calendar.index') }}" class="nav-link {{ request()->routeIs('calendar.index') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-calendar-alt"></i>
+                                    <p>Kalender</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('documents.index') }}" class="nav-link {{ request()->routeIs('documents.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-file-alt"></i>
+                                    <p>Manajemen Dokumen</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('support.index') }}" class="nav-link {{ request()->routeIs('support.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-ticket-alt"></i>
+                                    <p>Tiket Dukungan</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.workdays.index') }}" class="nav-link {{ request()->routeIs('admin.workdays.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-calendar-week"></i>
+                                    <p>Hari Kerja</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.holidays.index') }}" class="nav-link {{ request()->routeIs('admin.holidays.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-calendar-day"></i>
+                                    <p>Hari Libur</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.locations.index') }}" class="nav-link {{ request()->routeIs('admin.locations.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-map-marker-alt"></i>
+                                    <p>Lokasi Absensi</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.settings.index') }}" class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-cogs"></i>
+                                    <p>Pengaturan</p>
+                                </a>
+                            </li>
+                        @else
+                            <li class="nav-header">ABSENSI</li>
+                            <li class="nav-item">
+                                <a href="{{ route('attendance.check-in') }}" class="nav-link {{ request()->routeIs('attendance.check-in') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-sign-in-alt"></i>
+                                    <p>Absen Masuk</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('attendance.check-out') }}" class="nav-link {{ request()->routeIs('attendance.check-out') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-sign-out-alt"></i>
+                                    <p>Absen Pulang</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('attendance.history') }}" class="nav-link {{ request()->routeIs('attendance.history') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-history"></i>
+                                    <p>Riwayat Absensi</p>
+                                </a>
+                            </li>
+                            
+                            <li class="nav-header">LAINNYA</li>
+                            <li class="nav-item">
+                                <a href="{{ route('calendar.index') }}" class="nav-link {{ request()->routeIs('calendar.index') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-calendar-alt"></i>
+                                    <p>Kalender</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('documents.index') }}" class="nav-link {{ request()->routeIs('documents.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-file-alt"></i>
+                                    <p>Dokumen Saya</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('support.index') }}" class="nav-link {{ request()->routeIs('support.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-headset"></i>
+                                    <p>Layanan Dukungan</p>
+                                </a>
+                            </li>
+                        @endif
+                    </ul>
+                </nav>
+                <!-- /.sidebar-menu -->
+            </div>
+            <!-- /.sidebar -->
+        </aside>
+        @endauth
+
+        <!-- Content Wrapper. Contains page content -->
+        <div class="content-wrapper {{ !auth()->check() ? 'ml-0' : '' }}">
+            <!-- Content Header (Page header) -->
+            <div class="content-header">
+                <div class="container-fluid">
+                    @if(session('success'))
+                        <div class="alert alert-success alert-dismissible">
+                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                            {{ session('success') }}
+                        </div>
+                    @endif
+
+                    @if(session('error'))
+                        <div class="alert alert-danger alert-dismissible">
+                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                            {{ session('error') }}
+                        </div>
+                    @endif
                 </div>
-            @endauth
+            </div>
+            <!-- /.content-header -->
 
-            <!-- Content -->
-            <main class="content p-4 {{ auth()->check() ? 'col' : 'col-12' }}">
-                @if(session('success'))
-                    <div class="alert alert-success alert-dismissible fade show">
-                        {{ session('success') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                @endif
-
-                @if(session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show">
-                        {{ session('error') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                @endif
+            <!-- Main content -->
+            <section class="content">
+                <div class="container-fluid">
                     @yield('content')
-            </main>
+                </div>
+            </section>
+            <!-- /.content -->
         </div>
+        <!-- /.content-wrapper -->
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <div class="float-right d-none d-sm-block">
+                <b>Versi</b> 1.0.0
+            </div>
+            <strong>&copy; {{ date('Y') }} {{ App\Models\Setting::getValue('app_name', 'Sistem Absensi Sekolah') }}.</strong> Hak Cipta Dilindungi.
+        </footer>
     </div>
+    <!-- ./wrapper -->
 
-    <!-- Footer -->
-    <footer class="bg-dark text-white text-center py-3 mt-auto">
-        <div class="container">
-            <p class="mb-0">&copy; {{ date('Y') }} Sistem Absensi Sekolah. Hak Cipta Dilindungi.</p>
-        </div>
-    </footer>
-
-    <!-- Bootstrap JS dengan Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <!-- Bootstrap 4 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- AdminLTE App -->
+    <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
     
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    
     <script>
-        // Toggle sidebar
-        document.getElementById('sidebarCollapse').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('active');
-        });
-        
         // Live clock
         function updateClock() {
             const now = new Date();

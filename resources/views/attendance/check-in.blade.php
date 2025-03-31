@@ -43,6 +43,9 @@
                         <!-- Map -->
                         <div class="mb-4">
                             <label class="form-label">Lokasi Anda</label>
+                            <button type="button" id="detectLocation" class="btn btn-sm btn-info ms-2">
+                                <i class="fas fa-location-arrow me-1"></i> Deteksi Ulang Lokasi
+                            </button>
                             <div id="map" class="rounded" style="height: 300px;"></div>
                             <div class="mt-2">
                                 <div id="locationStatus" class="text-muted">Mendapatkan lokasi Anda...</div>
@@ -80,8 +83,32 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
         
+        // Variable untuk menyimpan garis penghubung
+        let distanceLine = null;
+        
         // Get user location
+        detectUserLocation();
+        
+        // Camera handling
+        document.getElementById('startCamera').addEventListener('click', startCamera);
+        document.getElementById('takePhoto').addEventListener('click', takePhoto);
+        document.getElementById('retakePhoto').addEventListener('click', retakePhoto);
+        document.getElementById('submitBtn').addEventListener('click', submitForm);
+        document.getElementById('detectLocation').addEventListener('click', function() {
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Mendeteksi...';
+            detectUserLocation(this);
+        });
+    });
+    
+    function detectUserLocation(button = null) {
         if (navigator.geolocation) {
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            };
+            
             navigator.geolocation.getCurrentPosition(
                 function(position) {
                     userLocation = {
@@ -101,40 +128,42 @@
                     marker = L.marker([userLocation.lat, userLocation.lng]).addTo(map)
                         .bindPopup('Lokasi Anda').openPopup();
                     
-                    // Check if user is within allowed locations
-                    let inAllowedLocation = checkIfInAllowedLocation(userLocation);
-                    locationFound = true;
-                    
-                    let statusText = inAllowedLocation 
-                        ? 'Anda berada di area yang diizinkan untuk absensi.'
-                        : 'Anda berada di luar area yang diizinkan untuk absensi.';
-                    
-                    let statusClass = inAllowedLocation ? 'text-success' : 'text-danger';
-                    
-                    document.getElementById('locationStatus').className = statusClass;
-                    document.getElementById('locationStatus').innerText = statusText;
-                    
                     // Display allowed locations on map
                     displayAllowedLocations();
                     
-                    checkSubmitButtonState();
+                    // Check if user is within allowed locations
+                    let result = checkIfInAllowedLocation(userLocation);
+                    locationFound = true;
+                    
+                    // Reset detect button if provided
+                    if (button) {
+                        button.disabled = false;
+                        button.innerHTML = '<i class="fas fa-location-arrow me-1"></i> Deteksi Ulang Lokasi';
+                    }
                 },
                 function(error) {
                     document.getElementById('locationStatus').innerText = 'Gagal mendapatkan lokasi Anda: ' + error.message;
                     document.getElementById('locationStatus').className = 'text-danger';
-                }
+                    
+                    // Reset detect button if provided
+                    if (button) {
+                        button.disabled = false;
+                        button.innerHTML = '<i class="fas fa-location-arrow me-1"></i> Deteksi Ulang Lokasi';
+                    }
+                },
+                options
             );
         } else {
             document.getElementById('locationStatus').innerText = 'Browser Anda tidak mendukung geolokasi.';
             document.getElementById('locationStatus').className = 'text-danger';
+            
+            // Reset detect button if provided
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-location-arrow me-1"></i> Deteksi Ulang Lokasi';
+            }
         }
-        
-        // Camera handling
-        document.getElementById('startCamera').addEventListener('click', startCamera);
-        document.getElementById('takePhoto').addEventListener('click', takePhoto);
-        document.getElementById('retakePhoto').addEventListener('click', retakePhoto);
-        document.getElementById('submitBtn').addEventListener('click', submitForm);
-    });
+    }
     
     function startCamera() {
         const video = document.getElementById('camera');
@@ -227,12 +256,26 @@
                 radius: location.radius
             }).addTo(map);
             
-            locationCircle.bindPopup(location.name);
+            // Tambahkan marker lokasi admin dengan ikon berbeda
+            let adminMarker = L.marker([location.latitude, location.longitude], {
+                icon: L.divIcon({
+                    html: '<i class="fas fa-map-marker-alt fa-2x text-danger"></i>',
+                    iconSize: [20, 20],
+                    className: 'admin-location-marker'
+                })
+            }).addTo(map);
+            
+            adminMarker.bindPopup("<strong>" + location.name + "</strong><br>Lokasi Absensi");
+            locationCircle.bindPopup("<strong>" + location.name + "</strong><br>Radius: " + location.radius + " meter");
         });
     }
     
     function checkIfInAllowedLocation(userLocation) {
         if (!userLocation) return false;
+        
+        let inAllowedLocation = false;
+        let closestLocation = null;
+        let shortestDistance = Infinity;
         
         // Check each allowed location
         for (let i = 0; i < allowedLocations.length; i++) {
@@ -244,12 +287,70 @@
                 location.longitude
             );
             
+            // Simpan lokasi terdekat
+            if (distance < shortestDistance) {
+                shortestDistance = distance;
+                closestLocation = location;
+            }
+            
             if (distance <= location.radius) {
-                return true;
+                inAllowedLocation = true;
             }
         }
         
-        return false;
+        // Hapus garis sebelumnya jika ada
+        if (window.distanceLine) {
+            map.removeLayer(window.distanceLine);
+        }
+        
+        // Perbarui status dengan informasi jarak ke lokasi terdekat
+        if (!inAllowedLocation && closestLocation) {
+            // Tambahkan garis dari posisi user ke lokasi terdekat
+            window.distanceLine = L.polyline([
+                [userLocation.lat, userLocation.lng], 
+                [closestLocation.latitude, closestLocation.longitude]
+            ], {
+                color: 'red',
+                dashArray: '5, 10',
+                weight: 2
+            }).addTo(map);
+            
+            let statusText = 'Anda berada di luar area yang diizinkan untuk absensi.<br>' +
+                            'Jarak ke lokasi terdekat (' + closestLocation.name + '): ' + 
+                            Math.round(shortestDistance) + ' meter (radius diizinkan: ' + 
+                            closestLocation.radius + ' meter)';
+            
+            document.getElementById('locationStatus').innerHTML = statusText;
+            document.getElementById('locationStatus').className = 'text-danger';
+            
+            // Tambahkan tombol navigasi
+            let navButton = document.createElement('button');
+            navButton.className = 'btn btn-sm btn-outline-info mt-2';
+            navButton.innerHTML = '<i class="fas fa-directions me-1"></i> Navigasi ke Lokasi';
+            navButton.onclick = function() {
+                const url = `https://www.google.com/maps/dir/?api=1&destination=${closestLocation.latitude},${closestLocation.longitude}&travelmode=walking`;
+                window.open(url, '_blank');
+            };
+            
+            // Tambahkan tombol ke dalam status jika belum ada
+            if (!document.getElementById('nav-button')) {
+                navButton.id = 'nav-button';
+                document.getElementById('locationStatus').appendChild(document.createElement('br'));
+                document.getElementById('locationStatus').appendChild(navButton);
+            }
+        } else if (inAllowedLocation) {
+            document.getElementById('locationStatus').className = 'text-success';
+            document.getElementById('locationStatus').innerHTML = 'Anda berada di area yang diizinkan untuk absensi.';
+            
+            // Hapus tombol navigasi jika ada
+            const navButton = document.getElementById('nav-button');
+            if (navButton) {
+                navButton.remove();
+            }
+        }
+        
+        checkSubmitButtonState();
+        return inAllowedLocation;
     }
     
     function calculateDistance(lat1, lon1, lat2, lon2) {

@@ -62,6 +62,9 @@
 
                 <div class="mb-3">
                     <label class="form-label">Lokasi pada Peta <span class="text-danger">*</span></label>
+                    <button type="button" id="detect-location" class="btn btn-sm btn-info ms-2">
+                        <i class="fas fa-location-arrow me-1"></i> Deteksi Lokasi Saat Ini
+                    </button>
                     <div id="map" class="mb-2"></div>
                     <div class="row">
                         <div class="col-md-6">
@@ -199,6 +202,64 @@
         
         // Tampilkan marker awal
         addMarker(initialLat, initialLng);
+        
+        // Deteksi lokasi saat ini
+        document.getElementById('detect-location').addEventListener('click', function() {
+            if (navigator.geolocation) {
+                // Tampilkan pesan loading
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Mendeteksi...';
+                this.disabled = true;
+                
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        // Berhasil mendapatkan lokasi
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        
+                        // Pindahkan peta ke lokasi yang terdeteksi
+                        map.setView([lat, lng], 17);
+                        
+                        // Tambahkan marker di lokasi tersebut
+                        addMarker(lat, lng);
+                        
+                        // Kembalikan tampilan tombol
+                        const detectBtn = document.getElementById('detect-location');
+                        detectBtn.innerHTML = '<i class="fas fa-location-arrow me-1"></i> Deteksi Lokasi Saat Ini';
+                        detectBtn.disabled = false;
+                    },
+                    function(error) {
+                        // Gagal mendapatkan lokasi
+                        let errorMsg = 'Gagal mendeteksi lokasi';
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMsg = 'Akses lokasi ditolak oleh pengguna';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMsg = 'Informasi lokasi tidak tersedia';
+                                break;
+                            case error.TIMEOUT:
+                                errorMsg = 'Waktu permintaan lokasi habis';
+                                break;
+                        }
+                        
+                        // Tampilkan alert error
+                        alert(errorMsg);
+                        
+                        // Kembalikan tampilan tombol
+                        const detectBtn = document.getElementById('detect-location');
+                        detectBtn.innerHTML = '<i class="fas fa-location-arrow me-1"></i> Deteksi Lokasi Saat Ini';
+                        detectBtn.disabled = false;
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
+            } else {
+                alert('Browser Anda tidak mendukung Geolocation API');
+            }
+        });
     });
 </script>
 @endsection 

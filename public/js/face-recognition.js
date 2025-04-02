@@ -7,9 +7,14 @@ const FaceRecognition = (function () {
     const config = {
         modelsPath: '/models',
         minConfidence: 0.5,
-        inputSize: 320,
+        inputSize: 224, // Ukuran input lebih kecil
         scoreThreshold: 0.5,
-        maxResults: 1
+        maxResults: 1,
+        detectionInterval: 100, // Interval deteksi dalam ms
+        videoConstraints: {
+            width: { ideal: 640 }, // Resolusi video lebih rendah
+            height: { ideal: 480 }
+        }
     };
 
     // Status
@@ -18,6 +23,7 @@ const FaceRecognition = (function () {
     let videoElement = null;
     let canvasElement = null;
     let isCameraRunning = false;
+    let lastDetectionTime = 0;
 
     /**
      * Inisialisasi face-api.js
@@ -30,11 +36,13 @@ const FaceRecognition = (function () {
             // Ubah path model menjadi relatif terhadap root URL
             const MODEL_URL = '/models';
 
-            // Load model face detection, landmark, dan recognition
-            await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-            await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+            // Load model face detection, landmark, dan recognition dengan konfigurasi ringan
+            await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL, {
+                inputSize: config.inputSize,
+                scoreThreshold: config.scoreThreshold
+            });
+            await faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL); // Menggunakan model landmark yang lebih ringan
             await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-            await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
 
             modelsLoaded = true;
             console.log('Model face-api.js berhasil dimuat');
@@ -68,7 +76,7 @@ const FaceRecognition = (function () {
         try {
             // Dapatkan akses ke kamera
             stream = await navigator.mediaDevices.getUserMedia({
-                video: {}
+                video: config.videoConstraints
             });
 
             // Tampilkan stream ke elemen video
@@ -107,36 +115,44 @@ const FaceRecognition = (function () {
     }
 
     /**
-     * Mendeteksi wajah dari elemen video
-     * @returns {Promise} - Promise yang berisi hasil deteksi
+     * Mendeteksi wajah dari video stream
+     * @returns {Promise<Object>} Hasil deteksi wajah
      */
     async function detectFace() {
-        if (!isCameraRunning || !videoElement) {
-            return Promise.reject('Camera is not running');
+        if (!videoElement || !isCameraRunning) return null;
+
+        // Cek interval deteksi
+        const now = Date.now();
+        if (now - lastDetectionTime < config.detectionInterval) {
+            return null;
         }
+        lastDetectionTime = now;
 
         try {
-            const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.5 });
+            // Deteksi wajah dengan Tiny Face Detector
+            const detections = await faceapi.detectAllFaces(
+                videoElement,
+                new faceapi.TinyFaceDetectorOptions({
+                    inputSize: config.inputSize,
+                    scoreThreshold: config.scoreThreshold
+                })
+            );
 
-            const detections = await faceapi.detectAllFaces(videoElement, options)
-                .withFaceLandmarks()
-                .withFaceDescriptors()
-                .withFaceExpressions();
+            if (detections && detections.length > 0) {
+                // Ambil wajah dengan skor tertinggi
+                const bestDetection = detections.reduce((best, current) => 
+                    current.score > best.score ? current : best
+                );
 
-            // Tampilkan hasil deteksi di canvas
-            const displaySize = { width: videoElement.videoWidth, height: videoElement.videoHeight };
-            faceapi.matchDimensions(canvasElement, displaySize);
+                // Gambar hasil deteksi
+                drawDetection(bestDetection);
 
-            const resizedDetections = faceapi.resizeResults(detections, displaySize);
-            canvasElement.getContext('2d').clearRect(0, 0, canvasElement.width, canvasElement.height);
-            faceapi.draw.drawDetections(canvasElement, resizedDetections);
-            faceapi.draw.drawFaceLandmarks(canvasElement, resizedDetections);
-            faceapi.draw.drawFaceExpressions(canvasElement, resizedDetections);
-
-            return detections;
+                return bestDetection;
+            }
+            return null;
         } catch (error) {
-            console.error('Error detecting faces:', error);
-            return Promise.reject(error);
+            console.error('Error detecting face:', error);
+            return null;
         }
     }
 
@@ -158,7 +174,7 @@ const FaceRecognition = (function () {
             }
 
             // Ambil region wajah
-            const { box } = detection[0];
+            const { box } = detection;
 
             // Buat canvas untuk crop wajah
             const tempCanvas = document.createElement('canvas');
@@ -185,7 +201,7 @@ const FaceRecognition = (function () {
             const imageData = tempCanvas.toDataURL('image/jpeg', 0.9);
 
             // Ambil face descriptor (untuk verifikasi)
-            const descriptor = detection[0].descriptor;
+            const descriptor = detection.descriptor;
 
             return Promise.resolve({
                 imageData,
@@ -252,9 +268,12 @@ const FaceRecognition = (function () {
         canvasElement.width = videoElement.videoWidth;
         canvasElement.height = videoElement.videoHeight;
 
-        // Gambar hasil deteksi
-        faceapi.draw.drawDetections(canvasElement, [detection]);
-        faceapi.draw.drawFaceLandmarks(canvasElement, [detection]);
+        // Gambar hasil deteksi dengan opsi yang dioptimalkan
+        faceapi.draw.drawDetections(canvasElement, [detection], {
+            withScore: true,
+            boxColor: 'rgba(0, 255, 0, 0.5)',
+            lineWidth: 2
+        });
     }
 
     // API publik

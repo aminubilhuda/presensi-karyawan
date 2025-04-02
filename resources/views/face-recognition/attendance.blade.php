@@ -10,7 +10,8 @@
             padding: 10px;
         }
         #video-container {
-            height: auto !important;
+            /* height: auto !important; */
+            height: 250px !important;
             min-height: 250px;
         }
         #video {
@@ -124,11 +125,16 @@
                                     style="width: 100%; max-width: 640px; height: 480px; background-color: #000; border-radius: 12px;">
                                     {{-- <div class="position-absolute top-0 start-0 end-0 z-1 bg-dark bg-opacity-75 text-white p-2 d-flex align-items-center justify-content-between">
                                     </div> --}}
-                                    <video id="video" width="100%" height="480" autoplay muted></video>
+                                    <video id="video" width="100%" height="480" autoplay muted playsinline></video>
                                     <canvas id="overlay" width="640" height="480" class="position-absolute top-0 start-0"></canvas>
                                     
                                     <!-- Panduan penempatan wajah -->
                                     <div id="face-guide" class="position-absolute" style="border: 2px dashed rgba(255,255,255,0.5); width: 200px; height: 200px; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+                                    
+                                    <!-- Tombol switch kamera -->
+                                    <button id="switchCamera" class="btn btn-sm btn-success position-absolute" style="bottom: 15px; right: 15px; border-radius: 5%; opacity: 0.7;">
+                                        Balik
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -227,7 +233,7 @@
         <div class="modal-content border-0 shadow rounded-4 bg-white">
             <div class="modal-body text-center py-5">
                 <div class="spinner-grow text-primary mb-4" style="width: 4rem; height: 4rem;" role="status">
-                    <span class="visually-hidden">Loading...</span>
+                    <!-- <span class="visually-hidden">Loading...</span> -->
                 </div>
                 <h4 class="fw-bold mb-3">Sedang Memproses</h4>
                 <p class="fs-5 text-muted mb-0">Mohon tunggu sebentar...</p>
@@ -269,6 +275,13 @@ document.addEventListener('DOMContentLoaded', function() {
     let isLocationDetected = false;
     let capturedImageData = null;
     let recognizedUser = null;
+    let currentStream = null;
+    
+    // Deteksi apakah menggunakan perangkat mobile
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // Default menggunakan kamera depan di perangkat mobile, belakang di non-mobile
+    let currentFacingMode = isMobileDevice ? 'user' : 'environment';
     
     // Responsif video container untuk mobile
     function adjustVideoSize() {
@@ -361,8 +374,23 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Mulai video
     function startVideo() {
-        navigator.mediaDevices.getUserMedia({ video: true })
+        // Hentikan stream yang sedang berjalan jika ada
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+        }
+        
+        // Konfigurasi constraints untuk kamera
+        const constraints = {
+            video: {
+                facingMode: { ideal: currentFacingMode },
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+            }
+        };
+
+        navigator.mediaDevices.getUserMedia(constraints)
             .then(stream => {
+                currentStream = stream;
                 video.srcObject = stream;
                 
                 // Setelah model dimuat, muat wajah terdaftar
@@ -530,6 +558,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     currentDetections = results;
                     recognizedUser = null;
                     
+                    // Hitung skala untuk menyesuaikan posisi landmark dengan ukuran canvas
+                    const displaySize = {
+                        width: overlay.width,
+                        height: overlay.height
+                    };
+                    const videoSize = {
+                        width: video.videoWidth,
+                        height: video.videoHeight
+                    };
+                    
+                    // Hitung faktor skala dari ukuran video ke ukuran tampilan
+                    const scaleX = displaySize.width / videoSize.width;
+                    const scaleY = displaySize.height / videoSize.height;
+                    
                     // Update status wajah
                     if (results.length === 0) {
                         faceStatusEl.innerHTML = 
@@ -609,6 +651,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     results.forEach((detection, i) => {
                         const box = detection.detection.box;
                         
+                        // Terapkan skala pada kotak wajah
+                        const scaledBox = {
+                            x: box.x * scaleX,
+                            y: box.y * scaleY,
+                            width: box.width * scaleX,
+                            height: box.height * scaleY
+                        };
+                        
                         // Kotak wajah dengan sudut melengkung
                         overlayCtx.lineWidth = 3;
                         overlayCtx.strokeStyle = recognizedUser ? '#00FF00' : '#FFFF00';
@@ -616,39 +666,31 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Gambar kotak dengan sudut melengkung
                         const radius = 10;
-                        overlayCtx.moveTo(box.x + radius, box.y);
-                        overlayCtx.lineTo(box.x + box.width - radius, box.y);
-                        overlayCtx.arcTo(box.x + box.width, box.y, box.x + box.width, box.y + radius, radius);
-                        overlayCtx.lineTo(box.x + box.width, box.y + box.height - radius);
-                        overlayCtx.arcTo(box.x + box.width, box.y + box.height, box.x + box.width - radius, box.y + box.height, radius);
-                        overlayCtx.lineTo(box.x + radius, box.y + box.height);
-                        overlayCtx.arcTo(box.x, box.y + box.height, box.x, box.y + box.height - radius, radius);
-                        overlayCtx.lineTo(box.x, box.y + radius);
-                        overlayCtx.arcTo(box.x, box.y, box.x + radius, box.y, radius);
+                        overlayCtx.moveTo(scaledBox.x + radius, scaledBox.y);
+                        overlayCtx.lineTo(scaledBox.x + scaledBox.width - radius, scaledBox.y);
+                        overlayCtx.arcTo(scaledBox.x + scaledBox.width, scaledBox.y, scaledBox.x + scaledBox.width, scaledBox.y + radius, radius);
+                        overlayCtx.lineTo(scaledBox.x + scaledBox.width, scaledBox.y + scaledBox.height - radius);
+                        overlayCtx.arcTo(scaledBox.x + scaledBox.width, scaledBox.y + scaledBox.height, scaledBox.x + scaledBox.width - radius, scaledBox.y + scaledBox.height, radius);
+                        overlayCtx.lineTo(scaledBox.x + radius, scaledBox.y + scaledBox.height);
+                        overlayCtx.arcTo(scaledBox.x, scaledBox.y + scaledBox.height, scaledBox.x, scaledBox.y + scaledBox.height - radius, radius);
+                        overlayCtx.lineTo(scaledBox.x, scaledBox.y + radius);
+                        overlayCtx.arcTo(scaledBox.x, scaledBox.y, scaledBox.x + radius, scaledBox.y, radius);
                         
                         overlayCtx.stroke();
                         
                         // Label wajah
                         const labelBgColor = recognizedUser ? 'rgba(0, 255, 0, 0.7)' : 'rgba(255, 255, 0, 0.7)';
                         const labelText = recognizedUser ? recognizedUser.name : 'Tidak Dikenali';
-                        const labelWidth = recognizedUser ? Math.max(recognizedUser.name.length * 10, 100) : 120;
+                        
+                        // Ukur lebar teks sebenarnya
+                        overlayCtx.font = 'bold 14px Arial';
+                        const textMetrics = overlayCtx.measureText(labelText);
+                        const labelWidth = Math.ceil(textMetrics.width) + 12; // Tambahkan padding
                         
                         overlayCtx.fillStyle = labelBgColor;
-                        overlayCtx.fillRect(box.x, box.y - 30, labelWidth, 30);
+                        overlayCtx.fillRect(scaledBox.x, scaledBox.y - 24, labelWidth, 24);
                         overlayCtx.fillStyle = '#000';
-                        overlayCtx.font = 'bold 16px Arial';
-                        overlayCtx.fillText(labelText, box.x + 5, box.y - 10);
-                        
-                        // Gambar landmark wajah dengan style yang lebih baik
-                        const landmarks = detection.landmarks;
-                        const positions = landmarks.positions;
-                        
-                        overlayCtx.fillStyle = '#00FFFF';
-                        positions.forEach(point => {
-                            overlayCtx.beginPath();
-                            overlayCtx.arc(point.x, point.y, 2, 0, 2 * Math.PI);
-                            overlayCtx.fill();
-                        });
+                        overlayCtx.fillText(labelText, scaledBox.x + 5, scaledBox.y - 8);
                     });
                     
                     checkAllConditions();
@@ -778,6 +820,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 confirmButtonColor: '#0d6efd'
             });
         });
+    });
+    
+    // Event listener untuk tombol switch kamera
+    document.getElementById('switchCamera').addEventListener('click', function() {
+        // Ubah facing mode
+        currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+        
+        // Restart video dengan facing mode yang baru
+        loadingModal.show();
+        startVideo();
     });
 });
 </script>

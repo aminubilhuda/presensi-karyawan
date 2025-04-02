@@ -79,15 +79,19 @@
                              class="rounded-circle mr-1" width="30" height="30" alt="Avatar"> 
                         {{ auth()->user()->name }}
                     </a>
-                    <div class="dropdown-menu dropdown-menu-right">
+                    <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                        <h6 class="dropdown-header">{{ Auth::user()->name }}</h6>
                         <a class="dropdown-item" href="{{ route('profile.edit') }}">
-                            <i class="fas fa-user mr-2"></i>Profil
+                            <i class="bi bi-person-circle me-2"></i>Profil
+                        </a>
+                        <a class="dropdown-item" href="{{ route('face.register.form') }}">
+                            <i class="bi bi-camera-fill me-2"></i>Pendaftaran Wajah
                         </a>
                         <div class="dropdown-divider"></div>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-                            <button type="submit" class="dropdown-item">
-                                <i class="fas fa-sign-out-alt mr-2"></i>Keluar
+                            <button type="submit" class="dropdown-item text-danger">
+                                <i class="bi bi-box-arrow-right me-2"></i>Logout
                             </button>
                         </form>
                     </div>

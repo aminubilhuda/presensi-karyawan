@@ -27,12 +27,60 @@ class AttendanceLocation extends Model
     ];
 
     /**
-     * Cek apakah lokasi tersebut berada dalam radius lokasi absensi
+     * Memeriksa apakah koordinat berada dalam radius lokasi ini
      */
-    public function isWithinRadius($latitude, $longitude): bool
+    public function isWithinRadius($latitude, $longitude)
     {
+        // Toleransi langsung untuk koordinat yang sangat dekat (untuk mengatasi ketidakakuratan GPS)
+        $latDiff = abs($this->latitude - $latitude);
+        $lonDiff = abs($this->longitude - $longitude);
+        
+        // Jika koordinat sangat dekat (selisih kurang dari 0.0005 derajat, sekitar 55 meter)
+        // Langsung anggap berada dalam area
+        if ($latDiff < 0.0005 && $lonDiff < 0.0005) {
+            \Log::info('Lokasi sangat dekat dengan titik absensi, diizinkan otomatis', [
+                'location_name' => $this->name,
+                'lat_diff' => $latDiff,
+                'lon_diff' => $lonDiff,
+                'submitted_coords' => [$latitude, $longitude],
+                'location_coords' => [$this->latitude, $this->longitude]
+            ]);
+            return true;
+        }
+        
+        // Tambahkan buffer untuk toleransi ketidakakuratan GPS
+        $bufferRadius = 200; // Ditingkatkan menjadi 200 meter untuk toleransi lebih besar
+        $totalRadius = $this->radius + $bufferRadius;
+        
+        // Konversi totalRadius ke kilometer
+        $totalRadiusKm = $totalRadius / 1000;
+        
         $distance = $this->calculateDistance($latitude, $longitude);
-        return $distance <= $this->radius;
+        
+        // Log untuk debugging - tambahkan user info jika bisa diperoleh
+        $userName = '';
+        $userId = '';
+        if (auth()->check()) {
+            $userName = auth()->user()->name;
+            $userId = auth()->user()->id;
+        }
+        
+        \Log::info('Location check', [
+            'user_id' => $userId,
+            'user_name' => $userName,
+            'submitted_coordinates' => [$latitude, $longitude],
+            'location_id' => $this->id,
+            'location_name' => $this->name,
+            'location_coordinates' => [$this->latitude, $this->longitude],
+            'distance' => $distance,
+            'distance_formatted' => self::formatDistance($distance),
+            'radius' => $this->radius / 1000,
+            'buffer' => $bufferRadius / 1000,
+            'total_radius' => $totalRadiusKm,
+            'is_within' => $distance <= $totalRadiusKm
+        ]);
+        
+        return $distance <= $totalRadiusKm;
     }
 
     /**

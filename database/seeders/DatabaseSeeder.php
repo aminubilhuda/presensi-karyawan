@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
         // Membuat user admin
         User::factory()->create([
             'name' => 'Admin',
-            'email' => 'abdira@smkabdinegara.sch.id',
+            'email' => 'smk.abdinegara798@gmail.com',
             'username' => 'abdira',
             'role_id' => $adminRole->id,
         ]);
@@ -35,16 +35,16 @@ class DatabaseSeeder extends Seeder
             'name' => 'Aminu Bil Huda',
             'email' => 'hudaaminubil@gmail.com',
             'username' => 'aminu',
-            'role_id' => '2',
+            'role_id' => '3',
         ]);
         // Membuat user staf tu
         User::factory()->create([
             'name' => 'Danang Dwi Putra Teguh Wioso',
             'email' => 'danangdwiputrateguhwioso@gmail.com',
             'username' => 'danang',
-            'role_id' => '3',
+            'role_id' => '4',
         ]);
-        // Membuat user staf tu
+        // Membuat user Kepala Sekolah
         User::factory()->create([
             'name' => 'Uswatun Hasanah',
             'email' => 'uswatunhasanah@gmail.com',

@@ -24,6 +24,8 @@ class Attendance extends Model
         'check_out_longitude',
         'status',
         'notes',
+        'device_info',
+        'suspicion_flags'
     ];
 
     protected $casts = [
@@ -34,6 +36,8 @@ class Attendance extends Model
         'check_in_longitude' => 'decimal:7',
         'check_out_latitude' => 'decimal:7',
         'check_out_longitude' => 'decimal:7',
+        'device_info' => 'json',
+        'suspicion_flags' => 'json',
     ];
 
     /**

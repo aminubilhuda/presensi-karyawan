@@ -23,10 +23,16 @@ use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\LeaveManagementController;
 use App\Http\Controllers\QrAttendanceController;
 use App\Http\Controllers\LeaveRequestController;
+use App\Http\Controllers\FaceRecognitionController;
+use App\Http\Controllers\FaceAttendanceController;
 use Illuminate\Support\Facades\Route;
 
 // Rute publik
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+// Rute absensi dengan wajah (dapat diakses tanpa login)
+Route::get('/face-attendance', [FaceRecognitionController::class, 'faceAttendanceForm'])->name('face.attendance.form');
+Route::post('/face-attendance/process', [FaceAttendanceController::class, 'processAttendance'])->name('face.attendance.process');
 
 // Rute autentikasi
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -230,4 +236,8 @@ Route::middleware('auth')->group(function () {
             ->name('save-settings')
             ->middleware('permission:admin.notifications.settings');
     });
+
+    // Pendaftaran wajah (memerlukan login)
+    Route::get('/face-register', [FaceRecognitionController::class, 'registerFaceForm'])->name('face.register.form');
+    Route::post('/face-register', [FaceRecognitionController::class, 'registerFace'])->name('face.register');
 });

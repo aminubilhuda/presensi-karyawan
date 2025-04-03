@@ -39,9 +39,9 @@ jobs:
       - name: Konfigurasi akses MySQL untuk GitHub Actions
         run: |
           sleep 10 # Tunggu MySQL benar-benar siap
-          sudo mysql -e "CREATE USER 'laravel'@'%' IDENTIFIED BY 'laravel';" -uroot -proot
-          sudo mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'laravel'@'%' WITH GRANT OPTION;" -uroot -proot
-          sudo mysql -e "FLUSH PRIVILEGES;" -uroot -proot
+          mysql -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE USER 'laravel'@'%' IDENTIFIED BY 'laravel';"
+          mysql -h 127.0.0.1 -P 3306 -u root -proot -e "GRANT ALL PRIVILEGES ON *.* TO 'laravel'@'%' WITH GRANT OPTION;"
+          mysql -h 127.0.0.1 -P 3306 -u root -proot -e "FLUSH PRIVILEGES;"
 
       - name: Validasi composer.json dan composer.lock
         run: composer validate --strict
@@ -122,7 +122,6 @@ jobs:
           DB_DATABASE=presensi_karyawan
           DB_USERNAME=laravel
           DB_PASSWORD=laravel
-          DB_SOCKET=/var/run/mysqld/mysqld.sock
           CACHE_DRIVER=file
           QUEUE_CONNECTION=sync
           SESSION_DRIVER=file
@@ -132,7 +131,7 @@ jobs:
         run: |
           # Periksa koneksi MySQL
           echo "Memeriksa koneksi MySQL..."
-          if mysql -u laravel -plaravel -h 127.0.0.1 -e "SELECT 1" presensi_karyawan; then
+          if mysql -h 127.0.0.1 -P 3306 -u laravel -plaravel -e "SELECT 1" presensi_karyawan; then
             # Lakukan migrasi dengan MySQL
             echo "Koneksi MySQL berhasil, melakukan migrasi..."
             php artisan migrate --force --no-interaction

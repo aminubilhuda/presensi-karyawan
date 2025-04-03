@@ -16,7 +16,7 @@ export default defineConfig({
         // Menonaktifkan sourcemap untuk produksi
         sourcemap: false,
         // Mengoptimasi build
-        minify: 'terser',
+        minify: 'esbuild',
         // Konfigurasi rollup yang lebih aman untuk lingkungan CI
         rollupOptions: {
             output: {

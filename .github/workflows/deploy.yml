@@ -80,6 +80,9 @@ jobs:
       - name: Install Node.js dependencies
         run: npm ci
 
+      - name: Install Terser untuk minify
+        run: npm install terser --save-dev
+
       - name: Build assets
         run: NODE_ENV=production npm run build-ci
         continue-on-error: true
@@ -180,7 +183,8 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: ${{ secrets.FTP_ROOT_DIR }}/
+          server-dir: ./
+          dangerous-clean-slate: true
           exclude: |
             **/.git*
             **/.git*/**

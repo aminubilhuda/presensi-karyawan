@@ -79,16 +79,20 @@ jobs:
         
       - name: Build alternatif jika Vite gagal
         run: |
-          if [ ! -d "public/build" ]; then
-            echo "Vite build gagal, mencoba metode alternatif..."
-            mkdir -p public/build
-            cp -r resources/css public/build/
-            cp -r resources/js public/build/
-            echo '{"files":{"resources/css/app.css":{"file":"assets/app.css"},"resources/js/app.js":{"file":"assets/app.js"}}}' > public/build/manifest.json
-            echo "Build alternatif selesai"
-          else
-            echo "Build Vite berhasil, melanjutkan..."
+          echo "Menjalankan build alternatif untuk memastikan file yang diperlukan tersedia..."
+          mkdir -p public/build
+          # Salin file CSS dan JS jika ada
+          if [ -d "resources/css" ]; then
+            cp -r resources/css public/build/ || true
           fi
+          if [ -d "resources/js" ]; then
+            cp -r resources/js public/build/ || true
+          fi
+          # Buat manifest.json dasar jika belum ada
+          if [ ! -f "public/build/manifest.json" ]; then
+            echo '{"files":{"resources/css/app.css":{"file":"assets/app.css"},"resources/js/app.js":{"file":"assets/app.js"}}}' > public/build/manifest.json
+          fi
+          echo "Build alternatif selesai"
 
       - name: Menjalankan Laravel commands
         run: |
@@ -99,14 +103,19 @@ jobs:
 
       - name: Generate .env file lengkap
         run: |
-          echo "${{ secrets.ENV_FILE }}" > .env
-          # Pastikan konfigurasi database tetap benar untuk GitHub Actions
-          echo "DB_CONNECTION=mysql" >> .env
-          echo "DB_HOST=127.0.0.1" >> .env
-          echo "DB_PORT=3306" >> .env
-          echo "DB_DATABASE=presensi_karyawan" >> .env
-          echo "DB_USERNAME=laravel" >> .env
-          echo "DB_PASSWORD=laravel" >> .env
+          # Buat temporary .env file dengan nilai-nilai utama
+          cat > .env << EOL
+          APP_KEY=base64:$(openssl rand -base64 32)
+          APP_NAME="Sistem_Absensi_Sekolah"
+          APP_ENV=production
+          APP_DEBUG=false
+          DB_CONNECTION=mysql
+          DB_HOST=127.0.0.1
+          DB_PORT=3306
+          DB_DATABASE=presensi_karyawan
+          DB_USERNAME=laravel
+          DB_PASSWORD=laravel
+          EOL
 
       - name: Migrasi Database dan Optimasi Laravel
         run: |
@@ -119,14 +128,18 @@ jobs:
       - name: Generate .env file untuk produksi
         run: |
           # Buat .env file untuk cPanel
-          echo "${{ secrets.ENV_FILE }}" > .env
-          # Ganti konfigurasi database untuk produksi
-          echo "DB_CONNECTION=mysql" >> .env
-          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
-          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
-          echo "DB_DATABASE=abdinega_abdira" >> .env
-          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          cat > .env << EOL
+          APP_KEY=base64:$(openssl rand -base64 32)
+          APP_NAME="Sistem_Absensi_Sekolah"
+          APP_ENV=production
+          APP_DEBUG=false
+          DB_CONNECTION=mysql
+          DB_HOST=${{ secrets.DB_HOST }}
+          DB_PORT=${{ secrets.DB_PORT }}
+          DB_DATABASE=abdinega_abdira
+          DB_USERNAME=${{ secrets.DB_USERNAME }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          EOL
 
       - name: Deploy ke cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4

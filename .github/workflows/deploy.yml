@@ -160,22 +160,8 @@ jobs:
 
       - name: Generate .env file untuk produksi
         run: |
-          # Buat .env file untuk cPanel
-          cat > .env << EOL
-          APP_KEY=base64:$(openssl rand -base64 32)
-          APP_NAME="Sistem_Absensi_Sekolah"
-          APP_ENV=production
-          APP_DEBUG=false
-          DB_CONNECTION=mysql
-          DB_HOST=${{ secrets.DB_HOST }}
-          DB_PORT=${{ secrets.DB_PORT }}
-          DB_DATABASE=abdinega_abdira
-          DB_USERNAME=${{ secrets.DB_USERNAME }}
-          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-          CACHE_DRIVER=file
-          SESSION_DRIVER=file
-          QUEUE_CONNECTION=sync
-          EOL
+          # Gunakan ENV_FILE dari GitHub Secrets
+          echo "${{ secrets.ENV_FILE }}" > .env
 
       - name: Deploy ke cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4

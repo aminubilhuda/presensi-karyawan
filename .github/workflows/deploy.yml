@@ -29,6 +29,12 @@ jobs:
           mysql database: 'presensi_karyawan'
           mysql user: 'laravel'
           mysql password: 'laravel'
+          mysql root password: 'root'
+          # Meningkatkan max_allowed_packet dan wait_timeout untuk mencegah timeout
+          mysql config: |
+            max_allowed_packet=128M
+            wait_timeout=3600
+            interactive_timeout=3600
 
       - name: Validasi composer.json dan composer.lock
         run: composer validate --strict
@@ -40,19 +46,17 @@ jobs:
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
 
-      - name: Generate .env file dasar
+      - name: Siapkan .env sementara untuk composer install
         run: |
           echo "APP_KEY=base64:$(openssl rand -base64 32)" > .env
-          # Konfigurasi untuk testing di GitHub Actions
-          echo "DB_CONNECTION=mysql" >> .env
-          echo "DB_HOST=127.0.0.1" >> .env
-          echo "DB_PORT=3306" >> .env
-          echo "DB_DATABASE=presensi_karyawan" >> .env
-          echo "DB_USERNAME=laravel" >> .env
-          echo "DB_PASSWORD=laravel" >> .env
+          echo "APP_ENV=testing" >> .env
+          echo "DB_CONNECTION=sqlite" >> .env
+          echo "DB_DATABASE=:memory:" >> .env
+          mkdir -p database
+          touch database/database.sqlite
 
       - name: Install Composer dependencies
-        run: composer install --no-dev --optimize-autoloader
+        run: composer install --no-dev --optimize-autoloader --no-scripts
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -66,6 +70,13 @@ jobs:
       - name: Build assets
         run: npm run build
 
+      - name: Menjalankan Laravel commands
+        run: |
+          php artisan key:generate
+          php artisan config:cache
+          php artisan route:cache
+          php artisan package:discover --ansi
+
       - name: Generate .env file lengkap
         run: |
           echo "${{ secrets.ENV_FILE }}" > .env
@@ -77,12 +88,9 @@ jobs:
           echo "DB_USERNAME=laravel" >> .env
           echo "DB_PASSWORD=laravel" >> .env
 
-      - name: Migrasi Database
+      - name: Migrasi Database dan Optimasi Laravel
         run: |
           php artisan migrate --force
-
-      - name: Optimasi Laravel
-        run: |
           php artisan config:clear
           php artisan cache:clear
           php artisan route:cache

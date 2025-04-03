@@ -10,4 +10,25 @@ export default defineConfig({
         }),
         tailwindcss(),
     ],
+    
+    // Konfigurasi untuk GitHub Actions
+    build: {
+        // Menonaktifkan sourcemap untuk produksi
+        sourcemap: false,
+        // Mengoptimasi build
+        minify: 'terser',
+        // Konfigurasi rollup yang lebih aman untuk lingkungan CI
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    vendor: [
+                        'react',
+                        'react-dom',
+                        'bootstrap',
+                        'jquery',
+                    ]
+                }
+            }
+        }
+    }
 });

@@ -3,6 +3,7 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
+        "build-ci": "vite build --emptyOutDir --mode production --config vite.config.js",
         "dev": "vite"
     },
     "devDependencies": {

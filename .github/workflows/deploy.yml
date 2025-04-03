@@ -22,6 +22,14 @@ jobs:
           extensions: mbstring, zip, exif, pcntl, gd, mysqli, pdo_mysql
           tools: composer:v2
 
+      - name: Setup MySQL
+        uses: mirromutth/mysql-action@v1.1
+        with:
+          mysql version: '8.0'
+          mysql database: 'presensi_karyawan'
+          mysql user: 'laravel'
+          mysql password: 'laravel'
+
       - name: Validasi composer.json dan composer.lock
         run: composer validate --strict
 
@@ -50,6 +58,17 @@ jobs:
       - name: Generate .env file
         run: |
           echo "${{ secrets.ENV_FILE }}" > .env
+          # Konfigurasi untuk testing di GitHub Actions
+          echo "DB_CONNECTION=mysql" >> .env
+          echo "DB_HOST=127.0.0.1" >> .env
+          echo "DB_PORT=3306" >> .env
+          echo "DB_DATABASE=presensi_karyawan" >> .env
+          echo "DB_USERNAME=laravel" >> .env
+          echo "DB_PASSWORD=laravel" >> .env
+
+      - name: Migrasi Database
+        run: |
+          php artisan migrate --force
 
       - name: Optimasi Laravel
         run: |
@@ -57,6 +76,18 @@ jobs:
           php artisan cache:clear
           php artisan route:cache
           php artisan view:cache
+          
+      - name: Generate .env file untuk produksi
+        run: |
+          # Buat .env file untuk cPanel
+          echo "${{ secrets.ENV_FILE }}" > .env
+          # Ganti konfigurasi database untuk produksi
+          echo "DB_CONNECTION=mysql" >> .env
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+          echo "DB_DATABASE=abdinega_abdira" >> .env
+          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
 
       - name: Deploy ke cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4

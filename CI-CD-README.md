@@ -86,3 +86,5 @@ Proyek ini juga menyediakan opsi deployment melalui webhook GitHub:
 2. Konfigurasi `deploy.sh` sesuai kebutuhan
 3. Atur webhook di GitHub repository Anda (Settings > Webhooks) dengan URL ke `deploy.php`
 4. Sesuaikan "secret" di `deploy.php` dengan "secret" yang Anda tentukan di GitHub webhook 
+
+BERHASIL

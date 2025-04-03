@@ -7,6 +7,8 @@ use App\Models\Attendance;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class AttendanceReportController extends Controller
 {
@@ -44,7 +46,7 @@ class AttendanceReportController extends Controller
     }
     
     /**
-     * Mengekspor laporan absensi ke CSV untuk Excel
+     * Mengekspor laporan absensi ke Excel menggunakan PhpSpreadsheet
      */
     public function export(Request $request)
     {
@@ -67,67 +69,74 @@ class AttendanceReportController extends Controller
         
         $attendances = $query->orderBy('check_in_time', 'desc')->get();
         
-        // File name
-        $fileName = 'laporan_absensi_' . date('Y-m-d') . '.csv';
+        // Buat spreadsheet baru
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
         
-        // Headers
+        // Set judul worksheet
+        $sheet->setTitle('Laporan Absensi');
+        
+        // Header kolom
         $headers = [
-            'Content-Type' => 'text/csv; charset=utf-8',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-            'Pragma' => 'no-cache',
-            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires' => '0',
+            'No', 
+            'Tanggal', 
+            'Nama',
+            'Peran',
+            'Jam Masuk',
+            'Jam Pulang',
+            'Lokasi Masuk (Lat)',
+            'Lokasi Masuk (Long)',
+            'Lokasi Pulang (Lat)',
+            'Lokasi Pulang (Long)',
+            'Status'
         ];
         
-        // Buat callback untuk membuat file CSV
-        $callback = function() use ($attendances) {
-            $file = fopen('php://output', 'w');
-            
-            // Add BOM untuk mendukung karakter Unicode di Excel
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-            
-            // Header kolom
-            $header = [
-                'No', 
-                'Tanggal', 
-                'Nama',
-                'Peran',
-                'Jam Masuk',
-                'Jam Pulang',
-                'Lokasi Masuk (Lat)',
-                'Lokasi Masuk (Long)',
-                'Lokasi Pulang (Lat)',
-                'Lokasi Pulang (Long)',
-                'Status'
-            ];
-            
-            // Gunakan semicolon sebagai delimiter untuk Excel
-            fputcsv($file, $header, ';');
-            
-            // Data
-            $no = 1;
-            foreach ($attendances as $attendance) {
-                $row = [
-                    $no++,
-                    date('d/m/Y', strtotime($attendance->check_in_time)),
-                    $attendance->user->name,
-                    $attendance->user->role->name,
-                    date('H:i', strtotime($attendance->check_in_time)),
-                    $attendance->check_out_time ? date('H:i', strtotime($attendance->check_out_time)) : '-',
-                    $attendance->check_in_latitude,
-                    $attendance->check_in_longitude,
-                    $attendance->check_out_time ? $attendance->check_out_latitude : '-',
-                    $attendance->check_out_time ? $attendance->check_out_longitude : '-',
-                    $attendance->check_out_time ? 'Lengkap' : 'Belum Absen Pulang'
-                ];
-                
-                // Gunakan semicolon sebagai delimiter untuk Excel
-                fputcsv($file, $row, ';');
-            }
-            
-            fclose($file);
-        };
+        // Tambahkan header
+        $sheet->fromArray([$headers], null, 'A1');
         
-        return response()->stream($callback, 200, $headers);
+        // Format header (bold dan background color)
+        $sheet->getStyle('A1:K1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:K1')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('E6E6E6');
+        
+        // Data array untuk rows
+        $attendanceData = [];
+        $no = 1;
+        
+        foreach ($attendances as $attendance) {
+            $attendanceData[] = [
+                $no++,
+                date('d/m/Y', strtotime($attendance->check_in_time)),
+                $attendance->user->name,
+                $attendance->user->role->name,
+                date('H:i', strtotime($attendance->check_in_time)),
+                $attendance->check_out_time ? date('H:i', strtotime($attendance->check_out_time)) : '-',
+                $attendance->check_in_latitude,
+                $attendance->check_in_longitude,
+                $attendance->check_out_time ? $attendance->check_out_latitude : '-',
+                $attendance->check_out_time ? $attendance->check_out_longitude : '-',
+                $attendance->check_out_time ? 'Lengkap' : 'Belum Absen Pulang'
+            ];
+        }
+        
+        // Tambahkan data ke sheet
+        if (!empty($attendanceData)) {
+            $sheet->fromArray($attendanceData, null, 'A2');
+        }
+        
+        // Auto-size column dimensions
+        foreach(range('A', 'K') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+        
+        // Membuat file Excel
+        $writer = new Xlsx($spreadsheet);
+        $tempFile = tempnam(sys_get_temp_dir(), 'attendance_report_');
+        $writer->save($tempFile);
+        
+        // File name
+        $fileName = 'laporan_absensi_' . date('Y-m-d') . '.xlsx';
+        
+        // Mengunduh file Excel dan menghapusnya setelah diunduh
+        return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
     }
 }

@@ -187,7 +187,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/leave', [LeaveManagementController::class, 'index'])
             ->name('leave.index')
             ->middleware('permission:admin.leave.view');
-        
+            
+        Route::get('/leave/export', [LeaveManagementController::class, 'export'])
+            ->name('leave.export')
+            ->middleware('permission:admin.leave.export');
+
         Route::get('/leave/{leave}', [LeaveManagementController::class, 'show'])
             ->name('leave.show')
             ->middleware('permission:admin.leave.view');
@@ -199,10 +203,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/leave/{leave}/reject', [LeaveManagementController::class, 'reject'])
             ->name('leave.reject')
             ->middleware('permission:admin.leave.reject');
-        
-        Route::get('/leave/export', [LeaveManagementController::class, 'export'])
-            ->name('leave.export')
-            ->middleware('permission:admin.leave.export');
         
         // Manajemen Izin Akses
         Route::get('/permissions', [PermissionController::class, 'index'])
@@ -240,4 +240,9 @@ Route::middleware('auth')->group(function () {
     // Pendaftaran wajah (memerlukan login)
     Route::get('/face-register', [FaceRecognitionController::class, 'registerFaceForm'])->name('face.register.form');
     Route::post('/face-register', [FaceRecognitionController::class, 'registerFace'])->name('face.register');
+});
+
+// Route fallback untuk 404
+Route::fallback(function () {
+    return view('errors.404');
 });

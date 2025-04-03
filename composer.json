@@ -11,7 +11,6 @@
         "ext-gd": "*",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
-        "maatwebsite/excel": "^3.1",
         "phpoffice/phpspreadsheet": "^4.1",
         "psr/simple-cache": "^2.0",
         "simplesoftwareio/simple-qrcode": "~4.2"

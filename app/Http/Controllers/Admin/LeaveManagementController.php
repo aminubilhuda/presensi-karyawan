@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class LeaveManagementController extends Controller
 {
@@ -173,7 +175,115 @@ class LeaveManagementController extends Controller
      */
     public function export(Request $request)
     {
-        // Implementasi export akan ditambahkan nanti
-        return back()->with('info', 'Fitur ekspor data belum tersedia.');
+        $query = LeaveRequest::with(['user', 'user.role', 'approver'])
+            ->orderBy('created_at', 'desc');
+        
+        // Filter berdasarkan status
+        if ($request->has('status') && in_array($request->status, ['pending', 'approved', 'rejected'])) {
+            $query->where('status', $request->status);
+        }
+        
+        // Filter berdasarkan jenis izin
+        if ($request->has('type') && in_array($request->type, ['izin', 'sakit'])) {
+            $query->where('type', $request->type);
+        }
+        
+        // Filter berdasarkan tanggal
+        if ($request->has('date_from') && $request->date_from) {
+            $query->where('start_date', '>=', $request->date_from);
+        }
+        
+        if ($request->has('date_to') && $request->date_to) {
+            $query->where('end_date', '<=', $request->date_to);
+        }
+        
+        // Filter berdasarkan user
+        if ($request->has('user_id') && $request->user_id) {
+            $query->where('user_id', $request->user_id);
+        }
+        
+        $leaveRequests = $query->get();
+        
+        // Buat spreadsheet baru
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        
+        // Set judul worksheet
+        $sheet->setTitle('Permohonan Izin');
+        
+        // Header kolom
+        $headers = [
+            'No', 
+            'Tanggal Pengajuan', 
+            'Nama Karyawan',
+            'Peran',
+            'Jenis Izin',
+            'Tanggal Mulai',
+            'Tanggal Selesai',
+            'Durasi (hari)',
+            'Alasan',
+            'Status',
+            'Disetujui/Ditolak Oleh',
+            'Catatan Admin'
+        ];
+        
+        // Tambahkan header
+        $sheet->fromArray([$headers], null, 'A1');
+        
+        // Format header (bold dan background color)
+        $sheet->getStyle('A1:L1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:L1')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('E6E6E6');
+        
+        // Data array untuk rows
+        $leaveData = [];
+        $no = 1;
+        
+        foreach ($leaveRequests as $leave) {
+            $startDate = Carbon::parse($leave->start_date);
+            $endDate = Carbon::parse($leave->end_date);
+            $duration = $startDate->diffInDays($endDate) + 1;
+            
+            $status = [
+                'pending' => 'Menunggu',
+                'approved' => 'Disetujui',
+                'rejected' => 'Ditolak'
+            ][$leave->status] ?? $leave->status;
+            
+            $leaveData[] = [
+                $no++,
+                Carbon::parse($leave->created_at)->format('d/m/Y H:i'),
+                $leave->user->name,
+                $leave->user->role->name,
+                ucfirst($leave->type), // 'izin' atau 'sakit'
+                Carbon::parse($leave->start_date)->format('d/m/Y'),
+                Carbon::parse($leave->end_date)->format('d/m/Y'),
+                $duration,
+                $leave->reason,
+                $status,
+                $leave->approver ? $leave->approver->name : '-',
+                $leave->admin_notes ?? '-'
+            ];
+        }
+        
+        // Tambahkan data ke sheet
+        if (!empty($leaveData)) {
+            $sheet->fromArray($leaveData, null, 'A2');
+        }
+        
+        // Auto-size column dimensions
+        foreach(range('A', 'L') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+        
+        // Membuat file Excel
+        $writer = new Xlsx($spreadsheet);
+        $tempFile = tempnam(sys_get_temp_dir(), 'leave_requests_');
+        $writer->save($tempFile);
+        
+        // File name
+        $fileName = 'permohonan_izin_' . date('Y-m-d') . '.xlsx';
+        
+        // Mengunduh file Excel dan menghapusnya setelah diunduh
+        return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
     }
 } 

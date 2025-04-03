@@ -125,7 +125,7 @@
                                     style="width: 100%; max-width: 640px; height: 480px; background-color: #000; border-radius: 12px;">
                                     {{-- <div class="position-absolute top-0 start-0 end-0 z-1 bg-dark bg-opacity-75 text-white p-2 d-flex align-items-center justify-content-between">
                                     </div> --}}
-                                    <video id="video" width="100%" height="480" autoplay muted playsinline></video>
+                                    <video id="video" width="100%" height="480" autoplay muted playsinline style="transform: scaleX(-1);"></video>
                                     <canvas id="overlay" width="640" height="480" class="position-absolute top-0 start-0"></canvas>
                                     
                                     <!-- Panduan penempatan wajah -->
@@ -283,6 +283,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Default menggunakan kamera depan di perangkat mobile, belakang di non-mobile
     let currentFacingMode = isMobileDevice ? 'user' : 'environment';
     
+    // Fungsi untuk mengatur transformasi mirror pada video dan overlay
+    function updateMirrorStatus() {
+        // Hanya mirroring video, bukan overlay canvas
+        video.style.transform = 'scaleX(-1)';
+        // Tidak mirroring overlay canvas agar koordinat tetap normal
+        overlay.style.transform = '';
+    }
+    
     // Responsif video container untuk mobile
     function adjustVideoSize() {
         const videoContainer = document.getElementById('video-container');
@@ -301,6 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Panggil saat load dan saat resize window
     adjustVideoSize();
+    updateMirrorStatus();
     window.addEventListener('resize', adjustVideoSize);
     
     // Load face-api models
@@ -392,6 +401,9 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(stream => {
                 currentStream = stream;
                 video.srcObject = stream;
+                
+                // Pastikan video termiror
+                updateMirrorStatus();
                 
                 // Setelah model dimuat, muat wajah terdaftar
                 loadRegisteredFaces().then(() => {
@@ -658,6 +670,12 @@ document.addEventListener('DOMContentLoaded', function() {
                             width: box.width * scaleX,
                             height: box.height * scaleY
                         };
+
+                        // Jika video dimirorkan, kita perlu membalik koordinat X untuk gambar overlay
+                        // karena pendeteksian dilakukan pada video yang dimirorkan, tapi kita gambar pada canvas normal
+                        if (video.style.transform.includes('scaleX(-1)')) {
+                            scaledBox.x = overlay.width - scaledBox.x - scaledBox.width;
+                        }
                         
                         // Kotak wajah dengan sudut melengkung
                         overlayCtx.lineWidth = 3;
@@ -687,10 +705,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         const textMetrics = overlayCtx.measureText(labelText);
                         const labelWidth = Math.ceil(textMetrics.width) + 12; // Tambahkan padding
                         
+                        // Gambar background label
                         overlayCtx.fillStyle = labelBgColor;
                         overlayCtx.fillRect(scaledBox.x, scaledBox.y - 24, labelWidth, 24);
+                        
+                        // Tulis teks di dalam kotak label
                         overlayCtx.fillStyle = '#000';
-                        overlayCtx.fillText(labelText, scaledBox.x + 5, scaledBox.y - 8);
+                        overlayCtx.fillText(labelText, scaledBox.x + 6, scaledBox.y - 8);
                     });
                     
                     checkAllConditions();
@@ -826,6 +847,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('switchCamera').addEventListener('click', function() {
         // Ubah facing mode
         currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+        
+        // Memastikan video dan overlay tetap termiror
+        updateMirrorStatus();
         
         // Restart video dengan facing mode yang baru
         loadingModal.show();

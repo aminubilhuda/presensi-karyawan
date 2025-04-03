@@ -144,12 +144,16 @@ jobs:
             php artisan migrate --force --no-interaction
           fi
           
-          # Optimasi Laravel tanpa database
+          # Update .env untuk menjamin cache menggunakan file
+          echo "CACHE_DRIVER=file" >> .env
+          echo "SESSION_DRIVER=file" >> .env
+          
+          # Optimasi Laravel dengan parameter aman
           php artisan config:clear
-          php artisan cache:clear
+          # Hapus cache secara manual untuk menghindari error database
+          rm -rf bootstrap/cache/*.php
+          # Cache rute saja
           php artisan route:cache
-          # Skip view cache jika menyebabkan masalah
-          # php artisan view:cache
 
       - name: Generate .env file untuk produksi
         run: |
@@ -165,6 +169,9 @@ jobs:
           DB_DATABASE=abdinega_abdira
           DB_USERNAME=${{ secrets.DB_USERNAME }}
           DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          CACHE_DRIVER=file
+          SESSION_DRIVER=file
+          QUEUE_CONNECTION=sync
           EOL
 
       - name: Deploy ke cPanel
